@@ -52,6 +52,30 @@ Download Online Retail II from Kaggle
 (https://www.kaggle.com/datasets/mashlyn/online-retail-ii-uci) and place the cleaned file
 in `data/` (raw data is not committed).
 
+## Reproducing the Analysis
+
+Run the scripts in this order (each builds on the SQLite tables written by the previous step):
+
+```bash
+python src/build_database.py     # loads + cleans data, builds `transactions` and `rfm`
+python src/segmentation_clv.py   # K-Means segments + baseline CLV -> `segments`, `clv`
+python src/churn_model.py        # leakage-free churn model (logistic + XGBoost)
+python src/make_figures.py       # EDA / descriptive figures
+```
+
+SQL scripts in `sql/` can be run standalone, e.g. `sqlite3 data/smartcart.db < sql/eda_summary.sql`.
+
+**Two things to read correctly:**
+
+- *Segmentation:* the authoritative segments come from K-Means (`segments` table,
+  `segmentation_clv.py`). The SQL quartile version (`rfm_scored`, from `sql/rfm_segments.sql`)
+  is a transparent baseline cross-check, not the production segmentation.
+- *Churn:* two distinct definitions are intentional. The descriptive churn split
+  (`churn_split.png`, from `sql/churn_labels.sql`) is a 90-day **recency snapshot** of who is
+  currently inactive. The churn **model** (`churn_model.py`) uses a leakage-free time split
+  (features before a cutoff, label = no purchase in the following 90 days). The two percentages
+  differ because they measure different things.
+
 ## Team
 
 - Tian Qiu (Tia) — tian.qiu3@mail.mcgill.ca
