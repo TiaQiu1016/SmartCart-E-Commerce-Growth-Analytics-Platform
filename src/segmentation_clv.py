@@ -32,6 +32,8 @@ DB_PATH = ROOT / "data" / "smartcart.db"
 OUT_DIR = ROOT / "reports" / "figures"
 K_RANGE = range(4, 9)
 RANDOM_STATE = 42
+MIN_CLV_WINDOW_DAYS = 90
+ORDER_RATE_CAP_QUANTILE = 0.95
 
 BLUE = "#234A70"
 ACCENT = "#E08A3C"
@@ -170,9 +172,13 @@ def estimate_clv(rfm: pd.DataFrame, tx: pd.DataFrame) -> pd.DataFrame:
     )
     clv = rfm.merge(life, on="customer_id", how="left")
     clv["avg_order_value"] = clv["monetary"] / clv["frequency"].clip(lower=1)
-    clv["observed_days"] = (latest_date - clv["first_purchase"]).dt.days.clip(lower=30)
+    clv["observed_days"] = (
+        (latest_date - clv["first_purchase"]).dt.days.clip(lower=MIN_CLV_WINDOW_DAYS)
+    )
     clv["observed_years"] = clv["observed_days"] / 365.25
-    clv["annual_order_rate"] = clv["frequency"] / clv["observed_years"]
+    clv["annual_order_rate_raw"] = clv["frequency"] / clv["observed_years"]
+    rate_cap = clv["annual_order_rate_raw"].quantile(ORDER_RATE_CAP_QUANTILE)
+    clv["annual_order_rate"] = clv["annual_order_rate_raw"].clip(upper=rate_cap)
     clv["recency_weight"] = np.exp(-clv["recency_days"] / 365.25)
     clv["clv_estimate"] = (
         clv["avg_order_value"] * clv["annual_order_rate"] * clv["recency_weight"]
@@ -181,7 +187,9 @@ def estimate_clv(rfm: pd.DataFrame, tx: pd.DataFrame) -> pd.DataFrame:
         [
             "customer_id",
             "avg_order_value",
+            "annual_order_rate_raw",
             "annual_order_rate",
+            "observed_days",
             "recency_weight",
             "frequency",
             "monetary",
