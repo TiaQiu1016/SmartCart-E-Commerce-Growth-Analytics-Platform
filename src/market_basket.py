@@ -12,9 +12,9 @@ Online Retail II is used exclusively — Olist has only ~3.3% multi-item orders
 and is unsuitable for this analysis.
 
 Outputs:
-  SQLite table  — association_rules (antecedents, consequents, support,
-                  confidence, lift, leverage, conviction)
-  Figures       — basket_top_rules.png, basket_support_confidence.png
+  SQLite tables — association_rules, product_recommendations
+  Figures       — basket_top_rules.png, basket_support_confidence.png,
+                  basket_network.png, basket_recommendations.png
 
 Usage:
     python src/market_basket.py
@@ -26,9 +26,16 @@ import sqlite3
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import numpy as np
 import pandas as pd
 from mlxtend.frequent_patterns import apriori, association_rules
+
+try:
+    import networkx as nx
+    _HAS_NX = True
+except ImportError:
+    _HAS_NX = False
 
 ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = ROOT / "data" / "smartcart.db"
@@ -75,6 +82,114 @@ def build_basket_matrix(tx: pd.DataFrame) -> pd.DataFrame:
 def fmt_items(items: frozenset, desc_lookup: dict[str, str], max_chars: int = 28) -> str:
     names = [desc_lookup.get(i, i).title()[:max_chars] for i in sorted(items)]
     return ", ".join(names)
+
+
+def build_recommendations(rules: pd.DataFrame, desc_lookup: dict[str, str]) -> pd.DataFrame:
+    """For each single-item antecedent, keep the highest-lift consequent recommendation."""
+    single = rules[rules["antecedents"].apply(len) == 1].copy()
+    single["src"] = single["antecedents"].apply(lambda s: next(iter(s)))
+    single["dst"] = single["consequents"].apply(lambda s: next(iter(s)))
+    best = (
+        single.sort_values("lift", ascending=False)
+        .drop_duplicates(subset="src")
+        .reset_index(drop=True)
+    )
+    recs = pd.DataFrame({
+        "stock_code": best["src"],
+        "description": best["src"].map(desc_lookup),
+        "recommended_stock_code": best["dst"],
+        "recommended_description": best["dst"].map(desc_lookup),
+        "support": best["support"].round(4),
+        "confidence": best["confidence"].round(4),
+        "lift": best["lift"].round(4),
+    })
+    return recs
+
+
+def plot_network(rules: pd.DataFrame, desc_lookup: dict[str, str], out: Path) -> None:
+    if not _HAS_NX:
+        print("networkx not installed — skipping basket_network.png")
+        return
+
+    # Use top rules by lift to keep the graph readable
+    top_rules = rules.head(40)
+
+    G = nx.DiGraph()
+    for _, row in top_rules.iterrows():
+        src_items = sorted(row["antecedents"])
+        dst_items = sorted(row["consequents"])
+        src = ", ".join(src_items)
+        dst = ", ".join(dst_items)
+        G.add_edge(src, dst, lift=row["lift"], confidence=row["confidence"])
+
+    # Short display labels (product description, truncated)
+    def short_label(code_str: str) -> str:
+        codes = [c.strip() for c in code_str.split(",")]
+        names = [desc_lookup.get(c, c).title()[:22] for c in codes]
+        return "\n".join(names)
+
+    labels = {n: short_label(n) for n in G.nodes()}
+    lifts = [G[u][v]["lift"] for u, v in G.edges()]
+    lift_min, lift_max = min(lifts), max(lifts)
+
+    node_degree = dict(G.degree())
+    node_sizes = [300 + node_degree[n] * 200 for n in G.nodes()]
+
+    edge_widths = [1 + 4 * (l - lift_min) / max(lift_max - lift_min, 1) for l in lifts]
+    edge_colors = [cm.Blues(0.4 + 0.6 * (l - lift_min) / max(lift_max - lift_min, 1)) for l in lifts]
+
+    pos = nx.spring_layout(G, seed=42, k=2.5)
+
+    fig, ax = plt.subplots(figsize=(14, 10))
+    nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color=BLUE, alpha=0.85, ax=ax)
+    nx.draw_networkx_edges(
+        G, pos, width=edge_widths, edge_color=edge_colors,
+        arrows=True, arrowsize=14, connectionstyle="arc3,rad=0.08", ax=ax,
+    )
+    nx.draw_networkx_labels(G, pos, labels=labels, font_size=6.5, font_color="white", ax=ax)
+
+    sm = cm.ScalarMappable(cmap="Blues", norm=plt.Normalize(vmin=lift_min, vmax=lift_max))
+    sm.set_array([])
+    plt.colorbar(sm, ax=ax, label="Lift", shrink=0.6)
+
+    ax.set_title("Product Association Network (top 40 rules by lift)\nArrow thickness = lift", pad=14)
+    ax.axis("off")
+    fig.tight_layout()
+    fig.savefig(out / "basket_network.png", dpi=150)
+    plt.close(fig)
+    print("basket_network.png written")
+
+
+def plot_recommendations(recs: pd.DataFrame, out: Path) -> None:
+    """Bar chart — for the top source products, show best recommended add-on and lift."""
+    top = recs.sort_values("lift", ascending=False).head(15).iloc[::-1]
+
+    def rule_str(row: pd.Series) -> str:
+        src = str(row["description"] or row["stock_code"]).title()[:28]
+        dst = str(row["recommended_description"] or row["recommended_stock_code"]).title()[:28]
+        return f"{src}\n  → {dst}"
+
+    labels = top.apply(rule_str, axis=1)
+
+    norm = plt.Normalize(top["lift"].min(), top["lift"].max())
+    colors = [cm.Blues(0.45 + 0.55 * norm(v)) for v in top["lift"]]
+
+    fig, ax = plt.subplots(figsize=(11, 7))
+    bars = ax.barh(labels, top["lift"], color=colors)
+    for bar, conf in zip(bars, top["confidence"]):
+        ax.text(
+            bar.get_width() + 0.15,
+            bar.get_y() + bar.get_height() / 2,
+            f"conf={conf:.0%}",
+            va="center", fontsize=8,
+        )
+    ax.set_xlabel("Lift")
+    ax.set_title("Top \"Customers Also Bought\" Recommendations\n(best add-on per source product, ranked by lift)")
+    ax.axvline(1.0, color="gray", linestyle="--", alpha=0.4)
+    fig.tight_layout()
+    fig.savefig(out / "basket_recommendations.png", dpi=150)
+    plt.close(fig)
+    print("basket_recommendations.png written")
 
 
 def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
@@ -173,6 +288,19 @@ def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
     fig.tight_layout()
     fig.savefig(out_dir / "basket_support_confidence.png", dpi=150)
     plt.close(fig)
+
+    # ── Product recommendations table ─────────────────────────────────────────
+    recs = build_recommendations(rules, desc_lookup)
+    with sqlite3.connect(db_path) as con:
+        recs.to_sql("product_recommendations", con, if_exists="replace", index=False)
+        con.commit()
+    print(f"product_recommendations written to SQLite ({len(recs):,} rows)")
+
+    # ── Figure 3: network graph ───────────────────────────────────────────────
+    plot_network(rules, desc_lookup, out_dir)
+
+    # ── Figure 4: bundle recommendations bar chart ────────────────────────────
+    plot_recommendations(recs, out_dir)
 
     print(f"\nFigures written to {out_dir}")
 
