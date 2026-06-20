@@ -47,6 +47,26 @@ MIN_LIFT = 1.5
 TOP_N = 15
 
 BLUE, ACCENT = "#234A70", "#E08A3C"
+TYPE_COLORS = {"Complete the Set": BLUE, "Often Bought With": ACCENT}
+
+_STOPWORDS = {"and", "the", "of", "in", "a", "an", "to", "for", "with", "set"}
+
+
+def classify_rule_type(
+    antecedents: frozenset, consequents: frozenset, desc_lookup: dict[str, str]
+) -> str:
+    """Return 'Complete the Set' if antecedent and consequent share >=2 significant
+    description words (colour/size/theme variants), else 'Often Bought With'."""
+    def sig_words(items: frozenset) -> set[str]:
+        words: set[str] = set()
+        for code in items:
+            for w in desc_lookup.get(code, "").lower().split():
+                if len(w) >= 4 and w not in _STOPWORDS:
+                    words.add(w)
+        return words
+
+    shared = sig_words(antecedents) & sig_words(consequents)
+    return "Complete the Set" if len(shared) >= 2 else "Often Bought With"
 
 
 def load_transactions(db_path: Path) -> tuple[pd.DataFrame, dict[str, str]]:
@@ -85,13 +105,13 @@ def fmt_items(items: frozenset, desc_lookup: dict[str, str], max_chars: int = 28
 
 
 def build_recommendations(rules: pd.DataFrame, desc_lookup: dict[str, str]) -> pd.DataFrame:
-    """For each single-item antecedent, keep the highest-lift consequent recommendation."""
+    """For each single-item antecedent, keep the highest-lift recommendation per rule_type."""
     single = rules[rules["antecedents"].apply(len) == 1].copy()
     single["src"] = single["antecedents"].apply(lambda s: next(iter(s)))
     single["dst"] = single["consequents"].apply(lambda s: next(iter(s)))
     best = (
         single.sort_values("lift", ascending=False)
-        .drop_duplicates(subset="src")
+        .drop_duplicates(subset=["src", "rule_type"])
         .reset_index(drop=True)
     )
     recs = pd.DataFrame({
@@ -99,6 +119,7 @@ def build_recommendations(rules: pd.DataFrame, desc_lookup: dict[str, str]) -> p
         "description": best["src"].map(desc_lookup),
         "recommended_stock_code": best["dst"],
         "recommended_description": best["dst"].map(desc_lookup),
+        "rule_type": best["rule_type"],
         "support": best["support"].round(4),
         "confidence": best["confidence"].round(4),
         "lift": best["lift"].round(4),
@@ -111,18 +132,14 @@ def plot_network(rules: pd.DataFrame, desc_lookup: dict[str, str], out: Path) ->
         print("networkx not installed — skipping basket_network.png")
         return
 
-    # Use top rules by lift to keep the graph readable
     top_rules = rules.head(40)
 
     G = nx.DiGraph()
     for _, row in top_rules.iterrows():
-        src_items = sorted(row["antecedents"])
-        dst_items = sorted(row["consequents"])
-        src = ", ".join(src_items)
-        dst = ", ".join(dst_items)
-        G.add_edge(src, dst, lift=row["lift"], confidence=row["confidence"])
+        src = ", ".join(sorted(row["antecedents"]))
+        dst = ", ".join(sorted(row["consequents"]))
+        G.add_edge(src, dst, lift=row["lift"], rule_type=row["rule_type"])
 
-    # Short display labels (product description, truncated)
     def short_label(code_str: str) -> str:
         codes = [c.strip() for c in code_str.split(",")]
         names = [desc_lookup.get(c, c).title()[:22] for c in codes]
@@ -131,28 +148,25 @@ def plot_network(rules: pd.DataFrame, desc_lookup: dict[str, str], out: Path) ->
     labels = {n: short_label(n) for n in G.nodes()}
     lifts = [G[u][v]["lift"] for u, v in G.edges()]
     lift_min, lift_max = min(lifts), max(lifts)
+    edge_colors = [TYPE_COLORS[G[u][v]["rule_type"]] for u, v in G.edges()]
+    edge_widths = [1 + 4 * (l - lift_min) / max(lift_max - lift_min, 1) for l in lifts]
 
     node_degree = dict(G.degree())
     node_sizes = [300 + node_degree[n] * 200 for n in G.nodes()]
-
-    edge_widths = [1 + 4 * (l - lift_min) / max(lift_max - lift_min, 1) for l in lifts]
-    edge_colors = [cm.Blues(0.4 + 0.6 * (l - lift_min) / max(lift_max - lift_min, 1)) for l in lifts]
-
     pos = nx.spring_layout(G, seed=42, k=2.5)
 
     fig, ax = plt.subplots(figsize=(14, 10))
-    nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color=BLUE, alpha=0.85, ax=ax)
+    nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color="#4A6FA5", alpha=0.85, ax=ax)
     nx.draw_networkx_edges(
         G, pos, width=edge_widths, edge_color=edge_colors,
         arrows=True, arrowsize=14, connectionstyle="arc3,rad=0.08", ax=ax,
     )
     nx.draw_networkx_labels(G, pos, labels=labels, font_size=6.5, font_color="white", ax=ax)
 
-    sm = cm.ScalarMappable(cmap="Blues", norm=plt.Normalize(vmin=lift_min, vmax=lift_max))
-    sm.set_array([])
-    plt.colorbar(sm, ax=ax, label="Lift", shrink=0.6)
-
-    ax.set_title("Product Association Network (top 40 rules by lift)\nArrow thickness = lift", pad=14)
+    from matplotlib.patches import Patch
+    legend = [Patch(color=c, label=t) for t, c in TYPE_COLORS.items()]
+    ax.legend(handles=legend, loc="upper left", fontsize=9)
+    ax.set_title("Product Association Network (top 40 rules by lift)\nEdge colour = rule type  |  thickness = lift", pad=14)
     ax.axis("off")
     fig.tight_layout()
     fig.savefig(out / "basket_network.png", dpi=150)
@@ -161,33 +175,40 @@ def plot_network(rules: pd.DataFrame, desc_lookup: dict[str, str], out: Path) ->
 
 
 def plot_recommendations(recs: pd.DataFrame, out: Path) -> None:
-    """Bar chart — for the top source products, show best recommended add-on and lift."""
-    top = recs.sort_values("lift", ascending=False).head(15).iloc[::-1]
-
+    """Two-panel bar chart: 'Complete the Set' (left) and 'Often Bought With' (right)."""
     def rule_str(row: pd.Series) -> str:
-        src = str(row["description"] or row["stock_code"]).title()[:28]
-        dst = str(row["recommended_description"] or row["recommended_stock_code"]).title()[:28]
+        src = str(row["description"] or row["stock_code"]).title()[:26]
+        dst = str(row["recommended_description"] or row["recommended_stock_code"]).title()[:26]
         return f"{src}\n  → {dst}"
 
-    labels = top.apply(rule_str, axis=1)
-
-    norm = plt.Normalize(top["lift"].min(), top["lift"].max())
-    colors = [cm.Blues(0.45 + 0.55 * norm(v)) for v in top["lift"]]
-
-    fig, ax = plt.subplots(figsize=(11, 7))
-    bars = ax.barh(labels, top["lift"], color=colors)
-    for bar, conf in zip(bars, top["confidence"]):
-        ax.text(
-            bar.get_width() + 0.15,
-            bar.get_y() + bar.get_height() / 2,
-            f"conf={conf:.0%}",
-            va="center", fontsize=8,
+    fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+    for ax, rtype in zip(axes, ["Complete the Set", "Often Bought With"]):
+        subset = (
+            recs[recs["rule_type"] == rtype]
+            .sort_values("lift", ascending=False)
+            .head(10)
+            .iloc[::-1]
         )
-    ax.set_xlabel("Lift")
-    ax.set_title("Top \"Customers Also Bought\" Recommendations\n(best add-on per source product, ranked by lift)")
-    ax.axvline(1.0, color="gray", linestyle="--", alpha=0.4)
+        if subset.empty:
+            ax.set_visible(False)
+            continue
+        labels = subset.apply(rule_str, axis=1)
+        color = TYPE_COLORS[rtype]
+        bars = ax.barh(labels, subset["lift"], color=color, alpha=0.85)
+        for bar, conf in zip(bars, subset["confidence"]):
+            ax.text(
+                bar.get_width() + 0.1,
+                bar.get_y() + bar.get_height() / 2,
+                f"{conf:.0%}",
+                va="center", fontsize=7.5,
+            )
+        ax.set_xlabel("Lift")
+        ax.set_title(f"{rtype}", fontsize=12, fontweight="bold", color=color)
+        ax.axvline(1.0, color="gray", linestyle="--", alpha=0.4)
+
+    fig.suptitle("Product Recommendations by Rule Type", fontsize=13, y=1.01)
     fig.tight_layout()
-    fig.savefig(out / "basket_recommendations.png", dpi=150)
+    fig.savefig(out / "basket_recommendations.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
     print("basket_recommendations.png written")
 
@@ -218,7 +239,10 @@ def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
         print("No rules met the thresholds. Try lowering MIN_LIFT or MIN_CONFIDENCE.")
         return
 
-    # Human-readable rule labels
+    # Classify each rule and attach human-readable labels
+    rules["rule_type"] = rules.apply(
+        lambda r: classify_rule_type(r["antecedents"], r["consequents"], desc_lookup), axis=1
+    )
     rules["rule_label"] = rules.apply(
         lambda r: (
             fmt_items(r["antecedents"], desc_lookup)
@@ -228,9 +252,13 @@ def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
         axis=1,
     )
 
+    type_counts = rules["rule_type"].value_counts()
+    for rtype, n in type_counts.items():
+        print(f"  {rtype}: {n} rules")
+
     # ── Write to SQLite ───────────────────────────────────────────────────────
     rules_db = rules[
-        ["antecedents", "consequents", "support", "confidence", "lift", "leverage", "conviction"]
+        ["antecedents", "consequents", "rule_type", "support", "confidence", "lift", "leverage", "conviction"]
     ].copy()
     rules_db["antecedents"] = rules_db["antecedents"].apply(lambda s: ", ".join(sorted(s)))
     rules_db["consequents"] = rules_db["consequents"].apply(lambda s: ", ".join(sorted(s)))
@@ -249,10 +277,11 @@ def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
             f"  sup={row['support']:.3f}  {row['rule_label']}"
         )
 
-    # ── Figure 1: top N rules by lift ─────────────────────────────────────────
+    # ── Figure 1: top N rules by lift, coloured by rule_type ─────────────────
     top = rules.head(TOP_N).iloc[::-1]
+    bar_colors = [TYPE_COLORS[t] for t in top["rule_type"]]
     fig, ax = plt.subplots(figsize=(11, 6))
-    bars = ax.barh(top["rule_label"], top["lift"], color=BLUE)
+    bars = ax.barh(top["rule_label"], top["lift"], color=bar_colors)
     ax.set_xlabel("Lift")
     ax.set_title(f"Top {TOP_N} Product Association Rules by Lift")
     ax.axvline(1.0, color="gray", linestyle="--", alpha=0.5)
@@ -261,9 +290,10 @@ def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
             bar.get_width() + 0.05,
             bar.get_y() + bar.get_height() / 2,
             f"conf={conf:.2f}",
-            va="center",
-            fontsize=7.5,
+            va="center", fontsize=7.5,
         )
+    from matplotlib.patches import Patch
+    ax.legend(handles=[Patch(color=c, label=t) for t, c in TYPE_COLORS.items()], fontsize=8)
     fig.tight_layout()
     fig.savefig(out_dir / "basket_top_rules.png", dpi=150)
     plt.close(fig)
