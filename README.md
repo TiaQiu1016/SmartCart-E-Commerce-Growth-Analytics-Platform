@@ -60,6 +60,8 @@ Run the scripts in this order (each builds on the SQLite tables written by the p
 python src/build_database.py     # loads + cleans data, builds `transactions` and `rfm`
 python src/segmentation_clv.py   # K-Means segments + baseline CLV -> `segments`, `clv`
 python src/churn_model.py        # leakage-free churn model (logistic + XGBoost)
+python src/propensity_model.py   # leakage-free 30-day purchase propensity model -> `propensity_scores`
+python src/market_basket.py      # Apriori association rules -> `association_rules`, `product_recommendations`
 python src/make_figures.py       # EDA / descriptive figures
 ```
 
