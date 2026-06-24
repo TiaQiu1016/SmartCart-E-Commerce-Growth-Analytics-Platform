@@ -22,7 +22,8 @@ ranking of the two model families on this problem.
 Outputs:
   SQLite table  — propensity_scores (customer_id, propensity_score)
   Figures       — propensity_roc.png, propensity_feature_importance.png,
-                  propensity_by_segment.png, propensity_gain_chart.png
+                  propensity_by_segment.png, propensity_gain_chart.png,
+                  propensity_precision_recall.png, propensity_shap_summary.png
 
 Usage:
     python src/propensity_model.py
@@ -37,10 +38,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, roc_auc_score, roc_curve
+from sklearn.metrics import classification_report, precision_recall_curve, roc_auc_score, roc_curve
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, StratifiedKFold, train_test_split
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
+
+try:
+    import shap
+    _HAS_SHAP = True
+except ImportError:
+    _HAS_SHAP = False
 
 ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = ROOT / "data" / "smartcart.db"
@@ -207,6 +214,57 @@ def plot_gain_chart(
         print(f"  Top {int(pct * 100)}% of customers by score: captures {capture:.1%} of actual buyers ({lift:.1f}x lift over random)")
 
 
+def plot_precision_recall(y_te: pd.Series, xgb_prob: np.ndarray, out_dir: Path) -> None:
+    """Precision-recall curve plus operating points at realistic campaign-budget levels."""
+    precision, recall, _ = precision_recall_curve(y_te, xgb_prob)
+    baseline = y_te.mean()
+
+    fig, ax = plt.subplots(figsize=(6.5, 5))
+    ax.plot(recall, precision, color=BLUE, label="XGBoost (tuned)")
+    ax.axhline(baseline, color="gray", linestyle="--", alpha=0.5, label=f"Random (precision={baseline:.2f})")
+    ax.set_xlabel("Recall (% of actual buyers captured)")
+    ax.set_ylabel("Precision (% of contacted customers who actually buy)")
+    ax.set_title("Precision-Recall Curve (30-day purchase propensity)")
+    ax.legend(loc="upper right")
+    fig.tight_layout()
+    fig.savefig(out_dir / "propensity_precision_recall.png", dpi=150)
+    plt.close(fig)
+
+    n = len(xgb_prob)
+    order = np.argsort(-xgb_prob)
+    y_sorted = np.asarray(y_te)[order]
+    prob_sorted = np.asarray(xgb_prob)[order]
+    total_positives = y_sorted.sum()
+
+    print("\nOperating points at realistic campaign-budget levels (XGBoost, tuned):")
+    for pct in (0.10, 0.15, 0.20, 0.25, 0.30):
+        k = int(n * pct)
+        threshold = prob_sorted[k - 1]
+        precision_at_k = y_sorted[:k].mean()
+        recall_at_k = y_sorted[:k].sum() / total_positives
+        print(
+            f"  Contact top {int(pct * 100)}% (score >= {threshold:.3f}): "
+            f"precision={precision_at_k:.1%}, recall={recall_at_k:.1%}"
+        )
+
+
+def plot_shap_summary(xgb: XGBClassifier, X: pd.DataFrame, out_dir: Path) -> None:
+    if not _HAS_SHAP:
+        print("shap not installed — skipping propensity_shap_summary.png")
+        return
+
+    explainer = shap.TreeExplainer(xgb)
+    shap_values = explainer.shap_values(X)
+
+    shap.summary_plot(shap_values, X, show=False)
+    fig = plt.gcf()
+    fig.suptitle("SHAP Feature Attribution — Purchase Propensity (XGBoost)", y=1.02)
+    fig.tight_layout()
+    fig.savefig(out_dir / "propensity_shap_summary.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print("propensity_shap_summary.png written")
+
+
 def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     data = build_dataset(db_path)
@@ -295,6 +353,12 @@ def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
 
     # ── figure 4: cumulative gain / lift chart ───────────────────────────────
     plot_gain_chart(y_te, xgb_prob, lr_prob, out_dir)
+
+    # ── figure 5: precision-recall curve + campaign-budget operating points ──
+    plot_precision_recall(y_te, xgb_prob, out_dir)
+
+    # ── figure 6: SHAP feature attribution ────────────────────────────────────
+    plot_shap_summary(xgb, X, out_dir)
 
     print(f"\nFigures written to {out_dir}")
 
