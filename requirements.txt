@@ -1,8 +1,11 @@
 pandas
 numpy
+matplotlib
 scikit-learn
 xgboost
 mlxtend
+networkx
+shap
 lifetimes
 plotly
 streamlit
