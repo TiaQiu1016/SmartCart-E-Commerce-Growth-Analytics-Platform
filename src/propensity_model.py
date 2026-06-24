@@ -13,11 +13,16 @@ Why a separate model from churn (90-day horizon):
   purchase_regularity, recency_ratio) capture purchase rhythm and are especially
   informative at this horizon.
 
-Models: logistic regression (baseline) + XGBoost.
+Models: logistic regression (baseline) + XGBoost, both hyperparameter-tuned via
+randomized/grid search with stratified 5-fold cross-validation. Tuning matters here:
+an untuned XGBoost previously underperformed the logistic baseline (0.762 vs 0.781
+AUC), which is unusual and a sign of mistuned defaults rather than a genuine
+ranking of the two model families on this problem.
+
 Outputs:
   SQLite table  — propensity_scores (customer_id, propensity_score)
   Figures       — propensity_roc.png, propensity_feature_importance.png,
-                  propensity_by_segment.png
+                  propensity_by_segment.png, propensity_gain_chart.png
 
 Usage:
     python src/propensity_model.py
@@ -33,7 +38,7 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, roc_auc_score, roc_curve
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, StratifiedKFold, train_test_split
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
@@ -131,6 +136,77 @@ def build_dataset(db_path: Path) -> pd.DataFrame:
     return feats
 
 
+def tune_logreg(X_tr_scaled: np.ndarray, y_tr: pd.Series) -> tuple[LogisticRegression, dict, float]:
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    grid = GridSearchCV(
+        LogisticRegression(max_iter=1000, class_weight="balanced"),
+        param_grid={"C": [0.01, 0.05, 0.1, 0.5, 1, 5, 10]},
+        scoring="roc_auc",
+        cv=cv,
+    )
+    grid.fit(X_tr_scaled, y_tr)
+    return grid.best_estimator_, grid.best_params_, grid.best_score_
+
+
+def tune_xgboost(X_tr: pd.DataFrame, y_tr: pd.Series, spw: float) -> tuple[XGBClassifier, dict, float]:
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    param_dist = {
+        "n_estimators": [100, 150, 200, 300, 400, 500],
+        "max_depth": [2, 3, 4, 5, 6],
+        "learning_rate": [0.01, 0.03, 0.05, 0.1, 0.2],
+        "subsample": [0.6, 0.7, 0.8, 0.9, 1.0],
+        "colsample_bytree": [0.6, 0.7, 0.8, 0.9, 1.0],
+        "min_child_weight": [1, 3, 5, 7, 10],
+        "gamma": [0, 0.1, 0.3, 0.5, 1.0],
+        "reg_alpha": [0, 0.1, 0.5, 1.0],
+        "reg_lambda": [0.5, 1.0, 1.5, 2.0],
+    }
+    base = XGBClassifier(eval_metric="logloss", random_state=42, scale_pos_weight=spw)
+    search = RandomizedSearchCV(
+        base, param_dist, n_iter=40, scoring="roc_auc", cv=cv, random_state=42, n_jobs=-1,
+    )
+    search.fit(X_tr, y_tr)
+    return search.best_estimator_, search.best_params_, search.best_score_
+
+
+def gain_curve(y_true: pd.Series, scores: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    order = np.argsort(-scores)
+    y_sorted = np.asarray(y_true)[order]
+    cum_positives = np.cumsum(y_sorted)
+    total_positives = y_sorted.sum()
+    pct_population = np.arange(1, len(y_sorted) + 1) / len(y_sorted)
+    pct_captured = cum_positives / total_positives
+    return pct_population, pct_captured
+
+
+def plot_gain_chart(
+    y_te: pd.Series, xgb_prob: np.ndarray, lr_prob: np.ndarray, out_dir: Path
+) -> None:
+    fig, ax = plt.subplots(figsize=(6.5, 5))
+    for prob, name, color in [
+        (xgb_prob, "XGBoost (tuned)", BLUE),
+        (lr_prob, "Logistic Regression (tuned)", ACCENT),
+    ]:
+        pct_pop, pct_cap = gain_curve(y_te, prob)
+        ax.plot(pct_pop * 100, pct_cap * 100, color=color, label=name)
+    ax.plot([0, 100], [0, 100], "k--", alpha=0.4, label="Random targeting")
+    ax.set_xlabel("% of customers targeted (ranked by propensity score)")
+    ax.set_ylabel("% of actual 30-day buyers captured")
+    ax.set_title("Cumulative Gain Chart")
+    ax.legend(loc="lower right")
+    fig.tight_layout()
+    fig.savefig(out_dir / "propensity_gain_chart.png", dpi=150)
+    plt.close(fig)
+
+    print("\nGain / lift at key targeting thresholds (XGBoost, tuned):")
+    pct_pop, pct_cap = gain_curve(y_te, xgb_prob)
+    for pct in (0.1, 0.2, 0.3):
+        idx = int(len(y_te) * pct) - 1
+        capture = pct_cap[idx]
+        lift = capture / pct
+        print(f"  Top {int(pct * 100)}% of customers by score: captures {capture:.1%} of actual buyers ({lift:.1f}x lift over random)")
+
+
 def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     data = build_dataset(db_path)
@@ -140,32 +216,23 @@ def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    # ── logistic regression baseline ─────────────────────────────────────────
+    # ── logistic regression, tuned via 5-fold CV grid search over C ───────────
     scaler = StandardScaler().fit(X_tr)
-    lr = LogisticRegression(max_iter=1000, class_weight="balanced")
-    lr.fit(scaler.transform(X_tr), y_tr)
-    lr_prob = lr.predict_proba(scaler.transform(X_te))[:, 1]
+    X_tr_scaled, X_te_scaled = scaler.transform(X_tr), scaler.transform(X_te)
+    lr, lr_params, lr_cv_auc = tune_logreg(X_tr_scaled, y_tr)
+    lr_prob = lr.predict_proba(X_te_scaled)[:, 1]
     lr_auc = roc_auc_score(y_te, lr_prob)
 
-    # ── XGBoost ──────────────────────────────────────────────────────────────
+    # ── XGBoost, tuned via randomized search (40 draws, 5-fold CV) ────────────
     # scale_pos_weight handles class imbalance without discarding majority-class signal
     spw = (y_tr == 0).sum() / max((y_tr == 1).sum(), 1)
-    xgb = XGBClassifier(
-        n_estimators=300,
-        max_depth=4,
-        learning_rate=0.1,
-        subsample=0.9,
-        colsample_bytree=0.9,
-        scale_pos_weight=spw,
-        eval_metric="logloss",
-        random_state=42,
-    )
-    xgb.fit(X_tr, y_tr)
+    xgb, xgb_params, xgb_cv_auc = tune_xgboost(X_tr, y_tr, spw)
     xgb_prob = xgb.predict_proba(X_te)[:, 1]
     xgb_auc = roc_auc_score(y_te, xgb_prob)
 
-    print(f"\nLogistic Regression AUC: {lr_auc:.3f}")
-    print(f"XGBoost AUC:             {xgb_auc:.3f}")
+    print(f"\nLogistic Regression — best C={lr_params['C']}, CV AUC={lr_cv_auc:.3f}, test AUC={lr_auc:.3f}")
+    print(f"XGBoost — CV AUC={xgb_cv_auc:.3f}, test AUC={xgb_auc:.3f}")
+    print(f"  best params: {xgb_params}")
     print("\nXGBoost classification report (threshold 0.5):")
     print(classification_report(y_te, (xgb_prob >= 0.5).astype(int), digits=3))
 
@@ -226,7 +293,10 @@ def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
     except Exception as exc:
         print(f"Skipping propensity_by_segment.png: {exc}")
 
-    print(f"Figures written to {out_dir}")
+    # ── figure 4: cumulative gain / lift chart ───────────────────────────────
+    plot_gain_chart(y_te, xgb_prob, lr_prob, out_dir)
+
+    print(f"\nFigures written to {out_dir}")
 
 
 if __name__ == "__main__":
