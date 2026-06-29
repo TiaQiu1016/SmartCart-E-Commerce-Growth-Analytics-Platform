@@ -6,6 +6,7 @@ xgboost
 mlxtend
 networkx
 shap
+scipy
 lifetimes
 plotly
 streamlit
