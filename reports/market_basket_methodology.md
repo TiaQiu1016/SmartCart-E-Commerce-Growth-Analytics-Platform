@@ -79,14 +79,43 @@ it is the threshold to flag as consequential if the rule count is questioned.
 `0.3` confidence is solid. `1.5` lift adds no practical filtering at this
 operating point and could be raised with zero cost.
 
+## Bootstrap stability check
+
+The sensitivity analysis showed `min_support=0.02` sits on a real slope, not
+a stable plateau — but a sensitive parameter isn't necessarily a *wrong* one.
+`src/market_basket_bootstrap.py` answers the follow-up question directly:
+are the 68 rules genuine signal, or would a slightly different sample of
+invoices produce a substantially different rule set?
+
+Method: resample the 33,897 invoices with replacement (standard bootstrap),
+re-mine rules at the exact same thresholds (`0.02`/`0.3`/`1.5`) on each
+resample, and check what fraction of the 20 resamples each of the original
+68 rules survives in (see `basket_bootstrap_stability.png`).
+
+**Finding: the rule set is stable.**
+
+- 56 of 68 rules (82%) survive in **every single** resample.
+- 60 of 68 (88%) survive in ≥80% of resamples.
+- **Zero** rules are unstable (none fall below 50% survival).
+- A handful of rules just outside the original 68 appear in several
+  resamples (e.g., a pair appearing in 11/20 resamples) — these are
+  borderline cases sitting right at the threshold, consistent with the
+  steep support slope found earlier, but they don't affect the headline
+  68 rules' robustness.
+
+**Conclusion:** despite `min_support=0.02` being a sensitive parameter in
+the abstract (small changes swing the rule count sharply), the specific
+68 rules it currently produces are not noise — they hold up under
+resampling. The threshold doesn't need to change.
+
 ## Limitations
 
-- Rule counts and the sensitivity results are specific to this dataset's
-  multi-item invoice population (33,897 invoices); they would shift on a
-  different or larger dataset.
-- No statistical significance testing (e.g., bootstrap resampling of
-  invoices) was done to check whether the top rules are stable signal or
-  could change materially under resampling — a natural next refinement.
+- Rule counts and the sensitivity/bootstrap results are specific to this
+  dataset's multi-item invoice population (33,897 invoices); they would
+  shift on a different or larger dataset.
+- The bootstrap used 20 resamples for runtime reasons; a larger run (e.g.
+  100+) would narrow the survival-rate estimates further, though the
+  current 82% all-resamples survival rate is already a strong signal.
 - The "Complete the Set" vs. "Often Bought With" split uses a simple
   word-overlap heuristic (2+ shared significant words), not a learned or
   validated classifier; edge cases (e.g., differently-worded variants) could
