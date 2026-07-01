@@ -75,8 +75,11 @@ Figures:
   treatment effects.
 - Large sample sizes can make small differences statistically significant, so
   effect sizes should be interpreted alongside p-values.
+- The segment-versus-churn snapshot association is partly circular because
+  `recency_days` contributes to both K-Means segmentation and the definition of
+  `churned_snapshot`. This result is descriptive and should not be interpreted
+  as independent evidence that segment membership predicts or causes churn.
 - Version 1 does not include model-predicted churn risk or purchase propensity
   scores. Those can be added later once the dashboard data contract is final.
 - No multiple-testing correction is applied in Version 1 because the module
   keeps the tested comparisons deliberately narrow.
-
