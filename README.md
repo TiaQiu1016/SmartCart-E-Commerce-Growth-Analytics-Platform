@@ -63,6 +63,7 @@ python src/churn_model.py        # leakage-free churn model (logistic + XGBoost)
 python src/propensity_model.py   # leakage-free 30-day purchase propensity model -> `propensity_scores`
 python src/market_basket.py      # Apriori association rules -> `association_rules`, `product_recommendations`
 python src/make_figures.py       # EDA / descriptive figures
+python src/prepare_insight_inputs.py  # computed module outputs -> local structured JSON
 ```
 
 SQL scripts in `sql/` can be run standalone, e.g. `sqlite3 data/smartcart.db < sql/eda_summary.sql`.
