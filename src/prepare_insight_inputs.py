@@ -200,6 +200,12 @@ def build_payload(db_path: Path) -> dict[str, Any]:
 
     unavailable: list[str] = []
     with sqlite3.connect(db_path) as con:
+        if not table_exists(con, "propensity_scores"):
+            unavailable.append(
+                "Purchase-propensity input is unavailable: "
+                "`propensity_scores` is missing."
+            )
+
         segments = build_segment_inputs(con)
         if not segments:
             unavailable.append(

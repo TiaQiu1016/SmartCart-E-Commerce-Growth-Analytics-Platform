@@ -67,6 +67,10 @@ The brief remains a decision-support artifact. A team member must verify every
 number against the JSON, confirm that each recommendation is supported by the
 named evidence, and approve the final wording before dashboard publication.
 
+Missing `propensity_scores`, product recommendations, group comparisons, or
+predictive churn outputs are reported explicitly. A `null` metric must never be
+interpreted as a zero value.
+
 ## Current limitation
 
 The current churn module does not write customer-level actual labels and
