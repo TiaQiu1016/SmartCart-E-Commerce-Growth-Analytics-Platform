@@ -353,7 +353,7 @@ def main(db_path: Path = DB_PATH) -> None:
         f"median: GBP {result['clv_bgnbd'].median():,.0f}"
     )
     zero_clv = (result["clv_bgnbd"] == 0).sum()
-    print(f"  Customers with clv_bgnbd=0: {zero_clv} (should be 0 after one-time buyer patch)")
+    print(f"  Customers with rounded clv_bgnbd=0: {zero_clv} (model predicted near-zero future activity, not a patch failure)")
     print(f"  Avg P(alive) -- all: {result['p_alive'].mean():.3f}  "
           f"repeat-only: {result[result['repeat_history']=='yes']['p_alive'].mean():.3f}")
 
