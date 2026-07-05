@@ -61,11 +61,17 @@ HOLDOUT_MONTHS = 6
 def load_transactions(db_path: Path) -> pd.DataFrame:
     with sqlite3.connect(db_path) as con:
         tx = pd.read_sql(
-            "SELECT customer_id, invoice_date, revenue FROM transactions",
+            "SELECT customer_id, invoice, invoice_date, revenue FROM transactions",
             con,
             parse_dates=["invoice_date"],
         )
     return tx
+
+
+def avg_order_value_by_customer(tx: pd.DataFrame) -> pd.Series:
+    """Invoice-level average order value (sum per invoice, then mean across invoices)."""
+    invoice_totals = tx.groupby(["customer_id", "invoice"])["revenue"].sum()
+    return invoice_totals.groupby("customer_id").mean()
 
 
 def build_rfm_summary(tx: pd.DataFrame) -> pd.DataFrame:
@@ -85,11 +91,13 @@ def build_rfm_summary(tx: pd.DataFrame) -> pd.DataFrame:
     )
     # Patch one-time buyer monetary_value: lifetimes returns 0 for them
     # because it excludes the first purchase from the monetary calculation.
+    # Use invoice-level average order value (not line-item mean) to avoid
+    # underestimating customers whose orders contain many line items.
     one_time_mask = summary["frequency"] == 0
     if one_time_mask.any():
-        avg_rev = tx.groupby("customer_id")["revenue"].mean()
+        avg_ov = avg_order_value_by_customer(tx)
         summary.loc[one_time_mask, "monetary_value"] = (
-            avg_rev.reindex(summary.index[one_time_mask]).values
+            avg_ov.reindex(summary.index[one_time_mask]).values
         )
     return summary
 
@@ -160,7 +168,7 @@ def predict_clv(
     exp_monetary = exp_monetary.clip(lower=0)
 
     result = summary.copy()
-    result["pred_transactions_12m"] = pred_tx.round(4)
+    result["pred_active_purchase_weeks_12m"] = pred_tx.round(4)
     result["p_alive"] = p_alive.round(4)
     result["exp_monetary_per_tx"] = exp_monetary.round(4)
     result["clv_bgnbd"] = (pred_tx * exp_monetary).round(2)
@@ -201,17 +209,20 @@ def holdout_validation(tx: pd.DataFrame) -> dict:
     pred = bgf_cal.predict(
         t_hold_weeks, cal_summary["frequency"], cal_summary["recency"], cal_summary["T"]
     )
+    # Count distinct active purchase weeks per customer in the holdout period.
+    # This matches what BG/NBD predicts (freq="W" collapses same-week orders).
+    hold_in_cal = hold_tx[hold_tx["customer_id"].isin(cal_summary.index)].copy()
+    hold_in_cal["week"] = hold_in_cal["invoice_date"].dt.to_period("W")
     actual = (
-        hold_tx[hold_tx["customer_id"].isin(cal_summary.index)]
-        .groupby("customer_id")["invoice_date"]
-        .count()
+        hold_in_cal.groupby("customer_id")["week"]
+        .nunique()
         .reindex(cal_summary.index, fill_value=0)
     )
     mae = float(np.abs(pred - actual).mean())
     corr = float(np.corrcoef(pred, actual)[0, 1])
-    print(f"\nHoldout validation ({HOLDOUT_MONTHS}-month holdout):")
-    print(f"  MAE on predicted vs actual transaction counts: {mae:.3f}")
-    print(f"  Pearson r(predicted, actual): {corr:.3f}")
+    print(f"\nHoldout validation ({HOLDOUT_MONTHS}-month holdout, actual = distinct purchase weeks):")
+    print(f"  Predicted mean: {pred.mean():.3f}  Actual mean: {actual.mean():.3f}")
+    print(f"  MAE: {mae:.3f}  Pearson r: {corr:.3f}")
     return {"holdout_mae": mae, "holdout_corr": corr}
 
 
@@ -224,7 +235,7 @@ def merge_with_baseline(clv_bgnbd: pd.DataFrame, db_path: Path) -> pd.DataFrame:
     merged = (
         clv_bgnbd[[
             "customer_id", "frequency", "recency", "T", "monetary_value",
-            "pred_transactions_12m", "p_alive", "repeat_history",
+            "pred_active_purchase_weeks_12m", "p_alive", "repeat_history",
             "exp_monetary_per_tx", "clv_bgnbd",
         ]]
         .merge(baseline, on="customer_id", how="left")
@@ -292,7 +303,7 @@ def write_output(result: pd.DataFrame, db_path: Path) -> None:
     cols = [
         "customer_id", "segment",
         "frequency", "recency", "T", "monetary_value",
-        "pred_transactions_12m", "p_alive", "repeat_history",
+        "pred_active_purchase_weeks_12m", "p_alive", "repeat_history",
         "exp_monetary_per_tx", "clv_bgnbd",
         "clv_baseline", "avg_order_value",
     ]
@@ -348,7 +359,7 @@ def main(db_path: Path = DB_PATH) -> None:
 
     print("\n=== BG/NBD CLV by Segment ===")
     seg_summary = (
-        result.groupby("segment")[["clv_baseline", "clv_bgnbd", "p_alive", "pred_transactions_12m"]]
+        result.groupby("segment")[["clv_baseline", "clv_bgnbd", "p_alive", "pred_active_purchase_weeks_12m"]]
         .mean()
         .round(2)
         .sort_values("clv_bgnbd", ascending=False)
