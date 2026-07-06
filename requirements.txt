@@ -11,3 +11,4 @@ lifetimes
 plotly
 streamlit
 jupyter
+pyyaml

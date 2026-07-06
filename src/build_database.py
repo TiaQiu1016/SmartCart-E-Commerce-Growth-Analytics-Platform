@@ -19,35 +19,39 @@ Usage:
 
 from pathlib import Path
 import sqlite3
+import yaml
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-RAW_CSV = ROOT / "data" / "online_retail_II.csv"
 DB_PATH = ROOT / "data" / "smartcart.db"
 RFM_SQL = ROOT / "sql" / "rfm.sql"
-
-COLUMN_MAP = {
-    "Invoice": "invoice",
-    "StockCode": "stock_code",
-    "Description": "description",
-    "Quantity": "quantity",
-    "InvoiceDate": "invoice_date",
-    "Price": "price",
-    "Customer ID": "customer_id",
-    "Country": "country",
-}
+CONFIG_PATH = ROOT / "config.yaml"
 
 
-def load_and_clean(csv_path: Path) -> pd.DataFrame:
-    df = pd.read_csv(csv_path, encoding="ISO-8859-1")
+def load_config(config_path: Path = CONFIG_PATH) -> dict:
+    with open(config_path) as f:
+        return yaml.safe_load(f)
+
+
+def load_and_clean(csv_path: Path, cfg: dict) -> pd.DataFrame:
+    col = cfg["columns"]
+    flt = cfg.get("filters", {})
+    min_qty   = flt.get("min_quantity", 1)
+    min_price = flt.get("min_price", 0.0)
+    encoding  = cfg.get("data", {}).get("encoding", "utf-8")
+
+    df = pd.read_csv(csv_path, encoding=encoding)
     raw_rows = len(df)
 
-    df = df.dropna(subset=["Customer ID"]).copy()
-    df["InvoiceDate"] = pd.to_datetime(df["InvoiceDate"])
-    df["Revenue"] = df["Quantity"] * df["Price"]
-    df = df[(df["Quantity"] > 0) & (df["Price"] > 0)]
+    # Rename source columns to SmartCart internal names
+    rename_map = {v: k for k, v in col.items()}
+    df = df.rename(columns=rename_map)
 
-    df = df.rename(columns={**COLUMN_MAP, "Revenue": "revenue"})
+    df = df.dropna(subset=["customer_id"]).copy()
+    df["invoice_date"] = pd.to_datetime(df["invoice_date"])
+    df["revenue"] = df["quantity"] * df["price"]
+    df = df[(df["quantity"] > min_qty - 1) & (df["price"] > min_price)]
+
     df["customer_id"] = df["customer_id"].astype(int)
     df["invoice_date"] = df["invoice_date"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -103,10 +107,14 @@ def verify(db_path: Path) -> None:
             print("  ", row)
 
 
-def main() -> None:
-    if not RAW_CSV.exists():
-        raise FileNotFoundError(f"Missing {RAW_CSV}. Put the Online Retail II CSV in data/.")
-    df = load_and_clean(RAW_CSV)
+def main(config_path: Path = CONFIG_PATH) -> None:
+    cfg = load_config(config_path)
+    raw_csv = ROOT / cfg["data"]["file"]
+    if not raw_csv.exists():
+        raise FileNotFoundError(
+            f"Missing {raw_csv}. Check the 'data.file' path in config.yaml."
+        )
+    df = load_and_clean(raw_csv, cfg)
     write_transactions(df, DB_PATH)
     build_rfm(DB_PATH, RFM_SQL)
     verify(DB_PATH)

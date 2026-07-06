@@ -48,9 +48,59 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### Using the demo dataset (Online Retail II)
+
 Download Online Retail II from Kaggle
-(https://www.kaggle.com/datasets/mashlyn/online-retail-ii-uci) and place the cleaned file
-in `data/` (raw data is not committed).
+(https://www.kaggle.com/datasets/mashlyn/online-retail-ii-uci) and place the file
+in `data/` (raw data is not committed). The default `config.yaml` is already configured
+for this dataset — no changes needed.
+
+### Adapting SmartCart to your own data
+
+SmartCart is designed to work with any retailer's transaction CSV without modifying Python
+code. All dataset-specific settings live in `config.yaml` at the project root.
+
+**1. Edit `config.yaml`** to match your CSV:
+
+```yaml
+company:
+  name: "Your Company Name"
+  currency_symbol: "$"      # shown throughout the dashboard
+
+data:
+  file: "data/your_file.csv"
+  encoding: "utf-8"         # use "ISO-8859-1" for Windows-exported CSVs
+
+columns:                    # map SmartCart's internal names to your column headers
+  customer_id:  "CustomerID"
+  invoice:      "OrderID"
+  stock_code:   "SKU"
+  description:  "ProductName"
+  quantity:     "Qty"
+  invoice_date: "OrderDate"
+  price:        "UnitPrice"
+  country:      "Country"
+
+filters:
+  min_quantity: 1           # rows below this are dropped (removes returns/cancellations)
+  min_price: 0.0
+```
+
+Required columns are `customer_id`, `invoice`, `quantity`, `invoice_date`, and `price`.
+`stock_code`, `description`, and `country` are used by the market-basket and group-comparison
+modules but are not strictly required for segmentation and CLV.
+
+**2. Upload and validate via the dashboard** (recommended):
+
+```bash
+streamlit run dashboard/app.py
+```
+
+Navigate to **Data Setup** in the sidebar. The page reads your `config.yaml`, lets you upload
+your CSV, validates that all mapped columns are present, previews the cleaned data, and
+runs `build_database.py` with one click.
+
+**3. Or run the pipeline directly from the terminal** (see below).
 
 ## Reproducing the Analysis
 
