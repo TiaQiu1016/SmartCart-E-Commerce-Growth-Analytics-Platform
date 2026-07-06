@@ -14,7 +14,7 @@ BUSA 649 Community Analytics Project (Summer 2026) · McGill Desautels MMA.
 | Module | Method | Dataset |
 | --- | --- | --- |
 | Customer Segmentation | RFM + K-Means | Online Retail II |
-| Customer Lifetime Value | RFM-based CLV (BG/NBD + Gamma-Gamma if time allows) | Online Retail II |
+| Customer Lifetime Value | RFM-based CLV (baseline) + BG/NBD + Gamma-Gamma (probabilistic) | Online Retail II |
 | Churn Prediction | Logistic Regression baseline + XGBoost | Online Retail II |
 | Purchase-Propensity Prediction | Logistic Regression + XGBoost | Online Retail II |
 | Product Recommendation | Market-basket analysis (Apriori / association rules) | Online Retail II |
@@ -26,7 +26,7 @@ reserve as a backup source.
 
 ## Tech Stack
 
-Python (pandas, numpy, scikit-learn, XGBoost, mlxtend, optionally lifetimes),
+Python (pandas, numpy, scikit-learn, XGBoost, mlxtend, lifetimes),
 SQLite for the SQL data layer and aggregation, Plotly + Streamlit for the dashboard,
 an LLM API (such as Claude) for AI-generated briefs, and GitHub for version control.
 
@@ -109,6 +109,7 @@ Run the scripts in this order (each builds on the SQLite tables written by the p
 ```bash
 python src/build_database.py     # loads + cleans data, builds `transactions` and `rfm`
 python src/segmentation_clv.py   # K-Means segments + baseline CLV -> `segments`, `clv`
+python src/clv_bgnbd.py          # BG/NBD + Gamma-Gamma CLV enhancement -> `clv_bgnbd`
 python src/churn_model.py        # leakage-free churn model (logistic + XGBoost)
 python src/propensity_model.py   # leakage-free 30-day purchase propensity model -> `propensity_scores`
 python src/market_basket.py      # Apriori association rules -> `association_rules`, `product_recommendations`
