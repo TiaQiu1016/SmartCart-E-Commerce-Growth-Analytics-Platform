@@ -44,12 +44,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("Market-Basket Recommendations")
+st.title("Product Recommendations")
 st.markdown(
-    "Apriori association-rule mining on 33,897 multi-item invoices. "
-    "Thresholds: `min_support=0.02`, `min_confidence=0.30`, `min_lift=1.5`. "
-    "Rules are split into **Complete the Set** (same product line variants) and "
-    "**Often Bought With** (cross-category pairs)."
+    "Which products are bought together — and how strongly? "
+    "SmartCart analyzed **33,897 orders** to find product pairs that appear together "
+    "far more often than chance. Rules are split into two types: "
+    "**Complete the Set** (color or size variants of the same product line) and "
+    "**Often Bought With** (genuinely different products customers combine)."
 )
 
 # ── data ──────────────────────────────────────────────────────────────────────
@@ -61,10 +62,10 @@ cross = rules[rules["rule_type"] == "Often Bought With"]
 
 # ── KPI row ───────────────────────────────────────────────────────────────────
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Total Rules", f"{len(rules)}")
-k2.metric("Complete the Set", f"{len(complete)}")
-k3.metric("Often Bought With", f"{len(cross)}")
-k4.metric("Top Lift", f"{rules['lift'].max():.1f}×")
+k1.metric("Product Pairs Found", f"{len(rules)}")
+k2.metric("Complete the Set", f"{len(complete)}", help="Same product in different colors/sizes")
+k3.metric("Often Bought With", f"{len(cross)}", help="Different products bought in the same order")
+k4.metric("Strongest Association", f"{rules['lift'].max():.1f}×", help="How much more likely than random chance")
 
 st.divider()
 
@@ -72,31 +73,38 @@ st.divider()
 tab1, tab2, tab3 = st.tabs(["Top Rules", "Product Lookup", "Rule Explorer"])
 
 with tab1:
+    st.info(
+        "**How to read these numbers:** "
+        "**Frequency** = share of all orders that contain this pair. "
+        "**Buy rate** = when a customer buys the first product, how often they also buy the second. "
+        "**Strength** = how much more likely the pair is compared to random chance (1× = no association; 25× = 25 times more likely)."
+    )
+
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Top 10 by Lift — Complete the Set")
+        st.subheader("Complete the Set — Top Pairs")
         top_complete = complete.nlargest(10, "lift")[
             ["antecedents", "consequents", "support", "confidence", "lift"]
         ].copy()
-        top_complete.columns = ["Antecedent", "Consequent", "Support", "Confidence", "Lift"]
-        top_complete["Support"] = top_complete["Support"].map("{:.3f}".format)
-        top_complete["Confidence"] = top_complete["Confidence"].map("{:.2f}".format)
-        top_complete["Lift"] = top_complete["Lift"].map("{:.1f}×".format)
+        top_complete.columns = ["If customer buys", "They often also buy", "Frequency", "Buy rate", "Strength"]
+        top_complete["Frequency"] = top_complete["Frequency"].map("{:.1%}".format)
+        top_complete["Buy rate"] = top_complete["Buy rate"].map("{:.0%}".format)
+        top_complete["Strength"] = top_complete["Strength"].map("{:.1f}×".format)
         st.dataframe(top_complete, use_container_width=True, hide_index=True)
 
     with col2:
-        st.subheader("Top 10 by Lift — Often Bought With")
+        st.subheader("Often Bought With — Top Pairs")
         top_cross = cross.nlargest(10, "lift")[
             ["antecedents", "consequents", "support", "confidence", "lift"]
         ].copy()
-        top_cross.columns = ["Antecedent", "Consequent", "Support", "Confidence", "Lift"]
-        top_cross["Support"] = top_cross["Support"].map("{:.3f}".format)
-        top_cross["Confidence"] = top_cross["Confidence"].map("{:.2f}".format)
-        top_cross["Lift"] = top_cross["Lift"].map("{:.1f}×".format)
+        top_cross.columns = ["If customer buys", "They often also buy", "Frequency", "Buy rate", "Strength"]
+        top_cross["Frequency"] = top_cross["Frequency"].map("{:.1%}".format)
+        top_cross["Buy rate"] = top_cross["Buy rate"].map("{:.0%}".format)
+        top_cross["Strength"] = top_cross["Strength"].map("{:.1f}×".format)
         st.dataframe(top_cross, use_container_width=True, hide_index=True)
 
-    st.subheader("Lift Distribution by Rule Type")
+    st.subheader("Association Strength by Rule Type")
     fig_lift = px.box(
         rules,
         x="rule_type",
@@ -105,11 +113,13 @@ with tab1:
         color_discrete_map={"Complete the Set": BLUE, "Often Bought With": ACCENT},
         points="all",
         hover_data={"antecedents": True, "consequents": True},
+        labels={"lift": "Strength (×)", "rule_type": ""},
     )
-    fig_lift.update_layout(**PLOTLY_LAYOUT, showlegend=False, xaxis_title=None, yaxis_title="Lift")
+    fig_lift.update_layout(**PLOTLY_LAYOUT, showlegend=False, xaxis_title=None, yaxis_title="Strength (higher = stronger association)")
     st.plotly_chart(fig_lift, use_container_width=True)
 
-    st.subheader("Support vs. Confidence (colored by Lift)")
+    st.subheader("How common vs. how reliable — each product pair")
+    st.caption("Bubble size = association strength. Larger and darker = stronger pair.")
     fig_sc = px.scatter(
         rules,
         x="support",
@@ -119,15 +129,32 @@ with tab1:
         color_continuous_scale=[[0, "#C8D8E8"], [1, BLUE]],
         symbol="rule_type",
         hover_data={"antecedents": True, "consequents": True, "lift": ":.2f"},
-        labels={"support": "Support", "confidence": "Confidence", "lift": "Lift"},
+        labels={"support": "How common (% of orders)", "confidence": "Buy rate (when A is bought, % also buy B)", "lift": "Strength", "rule_type": "Type"},
         size_max=25,
     )
-    fig_sc.update_layout(**PLOTLY_LAYOUT)
+    fig_sc.update_layout(
+        **{**PLOTLY_LAYOUT, "margin": dict(l=40, r=20, t=40, b=100)},
+        legend=dict(
+            title="Pairing type",
+            orientation="h",
+            yanchor="bottom",
+            y=-0.28,
+            xanchor="left",
+            x=0,
+        ),
+        coloraxis_colorbar=dict(
+            title="Strength",
+            thickness=12,
+            len=0.6,
+            yanchor="top",
+            y=1,
+        ),
+    )
     st.plotly_chart(fig_sc, use_container_width=True)
 
 with tab2:
     st.subheader("Product Recommendation Lookup")
-    st.markdown("Search for a product to see what it's frequently bought with.")
+    st.markdown("Select a product to see what customers frequently buy alongside it.")
 
     all_products = sorted(recs["description"].unique().tolist())
     selected = st.selectbox("Select a product", all_products)
@@ -141,47 +168,47 @@ with tab2:
         r1, r2 = st.columns(2)
 
         with r1:
-            st.markdown(f"**Complete the Set** ({len(complete_recs)} variants)")
+            st.markdown(f"**Complete the Set** — {len(complete_recs)} variant(s)")
+            st.caption("Same product line in a different color or size")
             if complete_recs.empty:
-                st.info("No variant rules found for this product.")
+                st.info("No variant pairings found for this product.")
             else:
                 for _, row in complete_recs.iterrows():
                     st.markdown(
                         f"""<div class="rule-card">
                         <strong>{row['recommended_description']}</strong>
                         &nbsp; (code: {row['recommended_stock_code']})<br/>
-                        Confidence: {row['confidence']:.0%} &nbsp;·&nbsp; Lift: {row['lift']:.1f}×
-                        &nbsp;·&nbsp; Support: {row['support']:.3f}
+                        Bought together in {row['confidence']:.0%} of orders &nbsp;·&nbsp; {row['lift']:.1f}× stronger than random chance
                         </div>""",
                         unsafe_allow_html=True,
                     )
 
         with r2:
-            st.markdown(f"**Often Bought With** ({len(cross_recs)} rules)")
+            st.markdown(f"**Often Bought With** — {len(cross_recs)} pairing(s)")
+            st.caption("Different products that customers frequently order together")
             if cross_recs.empty:
-                st.info("No cross-category rules found for this product.")
+                st.info("No cross-product pairings found for this product.")
             else:
                 for _, row in cross_recs.iterrows():
                     st.markdown(
                         f"""<div class="rule-card cross">
                         <strong>{row['recommended_description']}</strong>
                         &nbsp; (code: {row['recommended_stock_code']})<br/>
-                        Confidence: {row['confidence']:.0%} &nbsp;·&nbsp; Lift: {row['lift']:.1f}×
-                        &nbsp;·&nbsp; Support: {row['support']:.3f}
+                        Bought together in {row['confidence']:.0%} of orders &nbsp;·&nbsp; {row['lift']:.1f}× stronger than random chance
                         </div>""",
                         unsafe_allow_html=True,
                     )
 
 with tab3:
-    st.subheader("Full Rule Table")
-    st.markdown("Filter and explore all 68 rules.")
+    st.subheader("All Product Pairs")
+    st.markdown("Filter and explore every product pairing found in the data.")
 
     rule_type_filter = st.multiselect(
-        "Rule type",
+        "Pairing type",
         ["Complete the Set", "Often Bought With"],
         default=["Complete the Set", "Often Bought With"],
     )
-    min_lift_filter = st.slider("Minimum lift", 1.0, float(rules["lift"].max()), 1.5, step=0.5)
+    min_lift_filter = st.slider("Minimum strength (×)", 1.0, float(rules["lift"].max()), 1.5, step=0.5)
 
     filtered = rules[
         (rules["rule_type"].isin(rule_type_filter)) &
@@ -190,17 +217,16 @@ with tab3:
         "lift", ascending=False
     ).copy()
 
-    filtered.columns = ["Antecedent", "Consequent", "Type", "Support", "Confidence", "Lift"]
-    filtered["Support"] = filtered["Support"].map("{:.4f}".format)
-    filtered["Confidence"] = filtered["Confidence"].map("{:.3f}".format)
-    filtered["Lift"] = filtered["Lift"].map("{:.2f}".format)
+    filtered.columns = ["If customer buys", "They often also buy", "Type", "Frequency", "Buy rate", "Strength"]
+    filtered["Frequency"] = filtered["Frequency"].map("{:.1%}".format)
+    filtered["Buy rate"] = filtered["Buy rate"].map("{:.0%}".format)
+    filtered["Strength"] = filtered["Strength"].map("{:.1f}×".format)
 
-    st.markdown(f"Showing **{len(filtered)}** rules")
+    st.markdown(f"Showing **{len(filtered)}** product pairs")
     st.dataframe(filtered, use_container_width=True, hide_index=True)
 
 st.divider()
 st.caption(
-    "Apriori via mlxtend · 33,897 multi-item invoices · 4,621 products · "
-    "Bootstrap stability: 82% of rules survive all 20 resamples. "
-    "Sensitivity: support is the dominant parameter — confidence and lift are non-binding at this operating point."
+    "Analysis based on 33,897 orders containing multiple products · 4,621 distinct products · "
+    "82% of product pairs are stable across repeated sampling of the data."
 )
