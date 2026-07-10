@@ -67,6 +67,31 @@ def build_segment_inputs(con: sqlite3.Connection) -> list[dict[str, Any]]:
             "LEFT JOIN propensity_scores p ON s.customer_id = p.customer_id"
         )
         propensity_select = "AVG(p.propensity_score) AS avg_propensity_score"
+    bgnbd_join = ""
+    bgnbd_select = """
+            NULL AS avg_clv_bgnbd,
+            NULL AS avg_p_alive,
+            NULL AS avg_pred_active_purchase_weeks_12m,
+            NULL AS insufficient_repeat_history_share
+    """
+    if table_exists(con, "clv_bgnbd"):
+        bgnbd_cols = table_columns(con, "clv_bgnbd")
+        required_bgnbd = {
+            "customer_id",
+            "clv_bgnbd",
+            "p_alive",
+            "pred_active_purchase_weeks_12m",
+            "repeat_history",
+        }
+        if required_bgnbd.issubset(bgnbd_cols):
+            bgnbd_join = "LEFT JOIN clv_bgnbd b ON s.customer_id = b.customer_id"
+            bgnbd_select = """
+            AVG(b.clv_bgnbd) AS avg_clv_bgnbd,
+            AVG(b.p_alive) AS avg_p_alive,
+            AVG(b.pred_active_purchase_weeks_12m) AS avg_pred_active_purchase_weeks_12m,
+            AVG(CASE WHEN b.repeat_history = 'insufficient' THEN 1.0 ELSE 0.0 END)
+                AS insufficient_repeat_history_share
+            """
 
     query = f"""
         SELECT
@@ -76,11 +101,13 @@ def build_segment_inputs(con: sqlite3.Connection) -> list[dict[str, Any]]:
             AVG(s.frequency) AS avg_frequency,
             AVG(s.monetary) AS avg_monetary,
             AVG(c.clv_estimate) AS avg_clv_estimate,
+            {bgnbd_select},
             {propensity_select},
             {action_sql}
         FROM segments s
         LEFT JOIN clv c ON s.customer_id = c.customer_id
         {propensity_join}
+        {bgnbd_join}
         GROUP BY s.segment
         ORDER BY avg_clv_estimate DESC
     """
@@ -90,6 +117,10 @@ def build_segment_inputs(con: sqlite3.Connection) -> list[dict[str, Any]]:
         "avg_frequency",
         "avg_monetary",
         "avg_clv_estimate",
+        "avg_clv_bgnbd",
+        "avg_p_alive",
+        "avg_pred_active_purchase_weeks_12m",
+        "insufficient_repeat_history_share",
         "avg_propensity_score",
     ]
     for column in numeric:
@@ -200,6 +231,23 @@ def build_payload(db_path: Path) -> dict[str, Any]:
 
     unavailable: list[str] = []
     with sqlite3.connect(db_path) as con:
+        if not table_exists(con, "clv_bgnbd"):
+            unavailable.append(
+                "Enhanced CLV input is unavailable: `clv_bgnbd` is missing. "
+                "Run `python src/clv_bgnbd.py` after rebuilding the database."
+            )
+        elif not {
+            "customer_id",
+            "clv_bgnbd",
+            "p_alive",
+            "pred_active_purchase_weeks_12m",
+            "repeat_history",
+        }.issubset(table_columns(con, "clv_bgnbd")):
+            unavailable.append(
+                "Enhanced CLV input is unavailable: `clv_bgnbd` exists but is "
+                "missing one or more required BG/NBD output columns."
+            )
+
         if not table_exists(con, "propensity_scores"):
             unavailable.append(
                 "Purchase-propensity input is unavailable: "
@@ -232,7 +280,7 @@ def build_payload(db_path: Path) -> dict[str, Any]:
 
     return {
         "metadata": {
-            "schema_version": "1.0",
+            "schema_version": "1.1",
             "generated_at_utc": datetime.now(timezone.utc).isoformat(),
             "source": "Computed SmartCart SQLite outputs only",
         },

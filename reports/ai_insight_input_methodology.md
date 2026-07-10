@@ -15,7 +15,11 @@ The JSON contains:
 
 - `metadata`: schema version, generation time, and source statement.
 - `segments`: customer count, average RFM, average CLV, average purchase
-  propensity when available, and the existing segment action.
+  propensity when available, and the existing segment action. When the enhanced
+  CLV table is available, this section also includes average BG/NBD CLV,
+  average `p_alive`, average predicted active purchase weeks over the next
+  12 months, and the share of customers with insufficient repeat-purchase
+  history.
 - `predictive_churn_by_segment`: actual future churn rate and average predicted
   churn probability, but only when a valid customer-level `churn_scores` table
   exists.
@@ -25,6 +29,16 @@ The JSON contains:
 - `unavailable_modules`: explicit notes for expected outputs that do not yet
   exist.
 - `generation_requirements`: machine-readable rules for the future generator.
+
+The optional enhanced CLV table is:
+
+| Column | Meaning |
+| --- | --- |
+| `customer_id` | Join key shared with segmentation and baseline CLV |
+| `clv_bgnbd` | BG/NBD + Gamma-Gamma 12-month CLV estimate |
+| `p_alive` | BG/NBD probability that the customer is still active |
+| `pred_active_purchase_weeks_12m` | Expected active purchase weeks over the next 12 months |
+| `repeat_history` | Whether the customer has sufficient repeat-purchase history for the repeat-customer model |
 
 The expected future churn table is:
 
@@ -67,13 +81,15 @@ The brief remains a decision-support artifact. A team member must verify every
 number against the JSON, confirm that each recommendation is supported by the
 named evidence, and approve the final wording before dashboard publication.
 
-Missing `propensity_scores`, product recommendations, group comparisons, or
-predictive churn outputs are reported explicitly. A `null` metric must never be
-interpreted as a zero value.
+Missing `clv_bgnbd`, `propensity_scores`, product recommendations, group
+comparisons, or predictive churn outputs are reported explicitly. A `null`
+metric must never be interpreted as a zero value.
 
 ## Current limitation
 
-The current churn module does not write customer-level actual labels and
-predicted probabilities to SQLite. Until that output is available with its
-cutoff and label window documented, predictive churn comparisons remain
-explicitly unavailable in the structured input.
+The current local database may not contain the enhanced `clv_bgnbd` table until
+`src/clv_bgnbd.py` is run after rebuilding `data/smartcart.db`. The current
+churn module does not write customer-level actual labels and predicted
+probabilities to SQLite. Until that output is available with its cutoff and
+label window documented, predictive churn comparisons remain explicitly
+unavailable in the structured input.
