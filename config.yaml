@@ -1,0 +1,37 @@
+# SmartCart Configuration
+# ─────────────────────────────────────────────────────────────
+# Edit this file to adapt SmartCart to your own dataset.
+# Only this file needs changing — no Python code edits required.
+
+company:
+  name: "Online Retail II (Demo)"
+  currency_symbol: "£"
+
+data:
+  file: "data/online_retail_II.csv"
+  encoding: "ISO-8859-1"
+
+# Map YOUR CSV column names to SmartCart's internal names.
+# Left side  = your column header exactly as it appears in the CSV.
+# Right side = SmartCart internal name — do NOT change the right side.
+columns:
+  customer_id:  "Customer ID"   # unique customer identifier (numeric)
+  invoice:      "Invoice"       # order / invoice ID
+  stock_code:   "StockCode"     # product code
+  description:  "Description"   # product description
+  quantity:     "Quantity"      # units purchased (positive = sale)
+  invoice_date: "InvoiceDate"   # purchase timestamp
+  price:        "Price"         # unit price (before quantity)
+  country:      "Country"       # customer country (used in group comparison)
+
+filters:
+  min_quantity: 1      # rows with quantity <= 0 are treated as returns and dropped
+  min_price: 0.0       # rows with price <= 0 (free items / errors) are dropped
+
+models:
+  propensity_horizon_days: 30
+  churn_horizon_days: 90
+  market_basket:
+    min_support: 0.02
+    min_confidence: 0.30
+    min_lift: 1.50
