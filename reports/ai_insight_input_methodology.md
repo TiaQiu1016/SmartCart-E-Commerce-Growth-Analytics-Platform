@@ -27,7 +27,8 @@ The JSON contains:
   history.
 - `predictive_churn_by_segment`: actual future churn rate and average predicted
   churn probability, but only when a valid customer-level `churn_scores` table
-  exists.
+  exists. If `is_test_set` is present, this section uses held-out test-set
+  customers only.
 - `group_comparisons`: statistical tests and effect sizes when
   `group_comparison_results` exists.
 - `top_product_recommendations`: the ten highest-lift product recommendations.
@@ -56,6 +57,11 @@ The expected future churn table is:
 
 The segment and churn analyses must use compatible feature cutoffs before their
 outputs are interpreted together.
+
+If `segments_at_cutoff` is not available, predictive churn by segment should be
+treated as a useful interim diagnostic rather than the final leakage-free V2
+comparison, because the production `segments` table may have been created from
+the full observation window.
 
 ## Generation guardrails
 

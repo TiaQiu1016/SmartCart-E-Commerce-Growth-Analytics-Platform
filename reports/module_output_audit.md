@@ -20,7 +20,7 @@ Local database checked: `data/smartcart.db`.
 | Propensity | `propensity_scores` | Available | Customer-level score only; model diagnostics are documented separately. |
 | Market basket | `association_rules`, `product_recommendations` | Available | Supports top product-pair recommendations. |
 | Group comparison V1 | `group_comparison_results`, `segment_comparison_summary` | Available | Descriptive comparisons and effect sizes are available. |
-| Predictive churn | `churn_scores` | Not available in the checked local database | Needed for leakage-free group-comparison V2 and AI churn summaries. |
+| Predictive churn | `churn_scores` | Code available; local table written after `src/churn_model.py` runs | Needed for leakage-free group-comparison V2 and AI churn summaries. |
 
 ## Stage 3 implications
 
@@ -30,14 +30,17 @@ added after the BG/NBD script writes `clv_bgnbd` to SQLite.
 
 Group-comparison V2 should not use the current recency-based churn snapshot as
 evidence that segments independently predict churn, because the snapshot and
-the segment labels both depend on recency. V2 needs customer-level churn labels
-and prediction probabilities from a strict feature-window / label-window split.
+the segment labels both depend on recency. The new `churn_scores` table provides
+customer-level future churn labels and prediction probabilities from a strict
+feature-window / label-window split. A fully leakage-free segment validation
+still needs segment labels computed at the same cutoff.
 
 ## Immediate follow-up checklist
 
 1. Regenerate the local database if the raw CSV has changed.
 2. Run the enhanced CLV script and confirm `clv_bgnbd` exists.
-3. Add or request a customer-level `churn_scores` table from the churn module.
+3. Add `segments_at_cutoff` if the team wants a fully leakage-free segment vs.
+   future churn V2 analysis.
 4. Re-run `src/prepare_insight_inputs.py` and review `unavailable_modules`.
 5. Use the completed outputs to build group-comparison V2 and the first
    AI-generated insight brief.

@@ -60,9 +60,50 @@ def build_dataset(db_path: Path) -> pd.DataFrame:
 
     # churned = 1 if the customer did NOT purchase in the post-cutoff window
     feats["churned"] = (~feats["customer_id"].isin(post_customers)).astype(int)
+    feats["feature_cutoff_date"] = cutoff.date().isoformat()
+    feats["label_window_days"] = HORIZON_DAYS
     print(f"Cutoff date: {cutoff.date()}  |  customers active before cutoff: {len(feats):,}")
     print(f"Churn rate: {feats['churned'].mean():.1%}")
     return feats
+
+
+def write_churn_scores(
+    data: pd.DataFrame,
+    lr_prob_all: np.ndarray,
+    xgb_prob_all: np.ndarray,
+    test_index: pd.Index,
+    db_path: Path,
+) -> None:
+    """Write customer-level churn labels and scores for downstream modules."""
+    output = data[
+        [
+            "customer_id",
+            "feature_cutoff_date",
+            "label_window_days",
+            "churned",
+        ]
+    ].copy()
+    output["actual_churn_label"] = output.pop("churned")
+    output["predicted_churn_probability"] = xgb_prob_all.round(6)
+    output["baseline_logistic_churn_probability"] = lr_prob_all.round(6)
+    output["is_test_set"] = output.index.isin(test_index).astype(int)
+    output["model_name"] = "xgboost"
+    output = output[
+        [
+            "customer_id",
+            "feature_cutoff_date",
+            "label_window_days",
+            "actual_churn_label",
+            "predicted_churn_probability",
+            "baseline_logistic_churn_probability",
+            "is_test_set",
+            "model_name",
+        ]
+    ]
+    with sqlite3.connect(db_path) as con:
+        output.to_sql("churn_scores", con, if_exists="replace", index=False)
+        con.commit()
+    print(f"churn_scores table written: {len(output):,} rows")
 
 
 def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
@@ -85,6 +126,9 @@ def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
     xgb.fit(X_tr, y_tr)
     xgb_prob = xgb.predict_proba(X_te)[:, 1]
     xgb_auc = roc_auc_score(y_te, xgb_prob)
+
+    lr_prob_all = lr.predict_proba(scaler.transform(X))[:, 1]
+    xgb_prob_all = xgb.predict_proba(X)[:, 1]
 
     print(f"\nLogistic Regression AUC: {lr_auc:.3f}")
     print(f"XGBoost AUC:             {xgb_auc:.3f}")
@@ -109,7 +153,9 @@ def main(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
     ax.set_title("Churn Drivers (XGBoost feature importance)")
     fig.tight_layout(); fig.savefig(out_dir / "churn_feature_importance.png", dpi=150); plt.close(fig)
 
-    print(f"\nFigures written to {out_dir}")
+    write_churn_scores(data, lr_prob_all, xgb_prob_all, X_te.index, db_path)
+
+    print("\nFigures written to reports/figures")
 
 
 if __name__ == "__main__":

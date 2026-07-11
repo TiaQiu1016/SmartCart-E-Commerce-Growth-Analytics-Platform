@@ -63,8 +63,10 @@ P-values should not be interpreted alone. The report should prioritize effect
 sizes and business relevance, then translate only meaningful differences into
 actions.
 
-## Current blocker
+## Current status
 
-The checked local database does not yet contain `churn_scores` or
-`segments_at_cutoff`. Until those outputs exist, V2 can be planned and
-documented but should not be presented as final evidence.
+`src/churn_model.py` now writes the required `churn_scores` table after the
+churn model runs. The remaining blocker for a fully leakage-free V2 is
+`segments_at_cutoff`: the current `segments` table is still based on the full
+segmentation output, so segment-level future churn comparisons should be treated
+as an interim diagnostic until pre-cutoff segment labels exist.

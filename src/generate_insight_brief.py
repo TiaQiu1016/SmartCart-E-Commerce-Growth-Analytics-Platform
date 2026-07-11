@@ -130,8 +130,23 @@ def top_recommendations(recommendations: list[dict[str, Any]], limit: int = 5) -
     return lines
 
 
+def churn_signals(churn_rows: list[dict[str, Any]]) -> list[str]:
+    lines = []
+    for row in churn_rows:
+        lines.append(
+            "- "
+            f"**{row.get('segment')}**: observed future churn rate "
+            f"{percent(row.get('actual_future_churn_rate'))} across "
+            f"{int(row.get('evaluated_customers', 0)):,} evaluated customers; "
+            f"average predicted churn probability "
+            f"{percent(row.get('avg_predicted_churn_probability'))}."
+        )
+    return lines
+
+
 def build_brief(payload: dict[str, Any]) -> str:
     segments = sort_segments(payload.get("segments", []))
+    churn_by_segment = payload.get("predictive_churn_by_segment", [])
     group_comparisons = payload.get("group_comparisons", [])
     recommendations = payload.get("top_product_recommendations", [])
     unavailable = payload.get("unavailable_modules", [])
@@ -183,6 +198,18 @@ def build_brief(payload: dict[str, Any]) -> str:
         lines.extend(group_lines)
     else:
         lines.append("No group-comparison results are available yet.")
+
+    lines.extend(["", "## Predictive Churn Signals", ""])
+    churn_lines = churn_signals(churn_by_segment)
+    if churn_lines:
+        lines.extend(churn_lines)
+        lines.append(
+            "- Interpret this as a model-output diagnostic. A fully leakage-free "
+            "segment validation still needs segment labels created at the same "
+            "feature cutoff as the churn model."
+        )
+    else:
+        lines.append("Predictive churn outputs are not available yet.")
 
     lines.extend(["", "## Product Recommendation Signals", ""])
     recommendation_lines = top_recommendations(recommendations)

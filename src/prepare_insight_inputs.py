@@ -201,8 +201,10 @@ def build_predictive_churn_inputs(
     if not table_exists(con, "segments"):
         return [], "Predictive churn input is unavailable: `segments` table is missing."
 
+    churn_cols = table_columns(con, table)
+    where_clause = "WHERE c.is_test_set = 1" if "is_test_set" in churn_cols else ""
     frame = pd.read_sql(
-        """
+        f"""
         SELECT
             s.segment,
             COUNT(*) AS evaluated_customers,
@@ -210,6 +212,7 @@ def build_predictive_churn_inputs(
             AVG(c.predicted_churn_probability) AS avg_predicted_churn_probability
         FROM churn_scores c
         INNER JOIN segments s ON c.customer_id = s.customer_id
+        {where_clause}
         GROUP BY s.segment
         ORDER BY actual_future_churn_rate DESC
         """,

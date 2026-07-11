@@ -1,6 +1,6 @@
 # SmartCart AI Insight Brief Draft
 
-Generated: 2026-07-11 07:14 UTC
+Generated: 2026-07-11 11:26 UTC
 
 ## Scope and Guardrails
 
@@ -27,6 +27,14 @@ This draft is generated from computed SmartCart outputs only. It does not invent
 - Champions vs Hibernating on `monetary`: Cohen's d = 0.591, p = 0.0000. Interpret this as observational evidence, not a causal effect.
 - UK vs Non-UK on `clv_estimate`: Cohen's d = -0.222, p = 0.0000. Interpret this as observational evidence, not a causal effect.
 
+## Predictive Churn Signals
+
+- **Hibernating**: observed future churn rate 99.7% across 388 evaluated customers; average predicted churn probability 77.8%.
+- **At Risk High-Value**: observed future churn rate 68.2% across 302 evaluated customers; average predicted churn probability 53.8%.
+- **Champions**: observed future churn rate 2.3% across 216 evaluated customers; average predicted churn probability 20.2%.
+- **Recent / Promising**: observed future churn rate 0.0% across 151 evaluated customers; average predicted churn probability 58.7%.
+- Interpret this as a model-output diagnostic. A fully leakage-free segment validation still needs segment labels created at the same feature cutoff as the churn model.
+
 ## Product Recommendation Signals
 
 - When customers buy **GREEN REGENCY TEACUP AND SAUCER**, consider recommending **ROSES REGENCY TEACUP AND SAUCER** (confidence 79.8%, lift 25.37).
@@ -37,7 +45,7 @@ This draft is generated from computed SmartCart outputs only. It does not invent
 
 ## Missing Inputs and Limitations
 
-- Predictive churn input is unavailable: expected table `churn_scores` has not been written by the churn module.
+- No unavailable modules were reported in the structured input.
 - Statistical group comparisons are observational. They should guide business review, not be presented as randomized treatment effects.
 
 ## Human Review Checklist
