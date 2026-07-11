@@ -9,6 +9,11 @@ the later natural-language generation step.
 
 Default local output: `data/insight_inputs.json`.
 
+`src/generate_insight_brief.py` creates a deterministic Markdown brief draft
+from that JSON. It is a reviewable bridge toward the future AI-generated brief:
+it applies the same guardrails, cites only computed fields, and does not call
+an external model.
+
 ## Input contract
 
 The JSON contains:
