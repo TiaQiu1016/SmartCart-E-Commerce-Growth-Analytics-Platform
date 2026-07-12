@@ -16,7 +16,7 @@ readiness for Stage 3 integration, not visual polish.
 | Propensity | Working structure | Shows score distribution, segment score differences, campaign threshold planner, and top customers. |
 | Market Basket | Strong coverage | Includes top rules, product lookup, rule explorer, and plain-language metric explanations. |
 | Group Insights | Working structure | Shows UK vs. non-UK, Champions vs. Hibernating, and segment summaries with effect sizes. |
-| Churn | Missing | Needs a page built on top of the new `churn_scores` table. |
+| Churn | V1 available | Uses `churn_scores` for score distribution, segment churn diagnostics, and a high-risk customer list. |
 | AI Insight Brief | Missing | Needs a page or section that displays `reports/ai_insight_brief_draft.md` or a generated brief artifact. |
 
 ## Validation Completed
@@ -30,10 +30,9 @@ readiness for Stage 3 integration, not visual polish.
 
 ## Issues and Follow-ups
 
-1. **Churn page is the main missing dashboard page.** It should use
-   `churn_scores` after `src/churn_model.py` is run. Recommended views:
-   score distribution, actual churn rate by segment, predicted churn probability
-   by segment, test-set-only validation KPIs, and a table of high-risk customers.
+1. **Churn page V1 is available.** It uses `churn_scores` after
+   `src/churn_model.py` is run. The remaining improvement is to replace current
+   segment joins with `segments_at_cutoff` once that table exists.
 2. **AI brief is not yet displayed in the dashboard.** The deterministic draft
    is generated at `reports/ai_insight_brief_draft.md`. A later page can read
    and display this file, then replace it with an LLM-generated version once the
@@ -47,8 +46,9 @@ readiness for Stage 3 integration, not visual polish.
 
 ## Recommended Next Dashboard Work
 
-1. Add a `5_Churn.py` page using `churn_scores`.
-2. Add a lightweight `6_AI_Brief.py` page to display the generated brief draft.
-3. Update Overview to mention whether displayed CLV is baseline or BG/NBD.
-4. Add missing-table handling in dashboard utilities so the app fails with a
+1. Add a lightweight `6_AI_Brief.py` page to display the generated brief draft.
+2. Update Overview to mention whether displayed CLV is baseline or BG/NBD.
+3. Add missing-table handling in dashboard utilities so the app fails with a
    friendly message when a module has not been run yet.
+4. Add `segments_at_cutoff` and update the Churn page once final V2 validation
+   is ready.

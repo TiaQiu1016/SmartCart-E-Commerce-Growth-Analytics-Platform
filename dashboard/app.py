@@ -64,6 +64,7 @@ with st.sidebar:
     st.markdown("- Propensity Scoring")
     st.markdown("- Market Basket")
     st.markdown("- Group Insights")
+    st.markdown("- Churn Risk")
     st.markdown("---")
     st.markdown("📊 Online Retail II · 5,878 customers")
     st.markdown("McGill Desautels MMA · BUSA 649")

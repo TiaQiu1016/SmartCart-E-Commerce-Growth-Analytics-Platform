@@ -59,6 +59,12 @@ def load_propensity() -> pd.DataFrame:
 
 
 @st.cache_data
+def load_churn_scores() -> pd.DataFrame:
+    with sqlite3.connect(DB_PATH) as con:
+        return pd.read_sql("SELECT * FROM churn_scores", con)
+
+
+@st.cache_data
 def load_association_rules() -> pd.DataFrame:
     with sqlite3.connect(DB_PATH) as con:
         return pd.read_sql("SELECT * FROM association_rules", con)
