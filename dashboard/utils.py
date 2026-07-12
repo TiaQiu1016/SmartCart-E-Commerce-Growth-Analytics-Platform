@@ -26,6 +26,37 @@ CONFIG = _read_config()
 CURRENCY = CONFIG.get("company", {}).get("currency_symbol", "£")
 COMPANY_NAME = CONFIG.get("company", {}).get("name", "SmartCart")
 
+def render_sidebar() -> None:
+    """Consistent SmartCart branding and shared CSS for every page."""
+    st.markdown(
+        f"""
+        <style>
+        [data-testid="stSidebar"] {{ background-color: {BLUE}; }}
+        [data-testid="stSidebar"] * {{ color: white !important; }}
+        [data-testid="stSidebar"] hr {{ border-color: rgba(255,255,255,0.2); }}
+        h1, h2, h3 {{ color: {BLUE}; }}
+        .stApp {{ background-color: #F5F7FA; }}
+        [data-testid="stMetric"] {{
+            background: white; border-radius: 10px; padding: 16px 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }}
+        [data-testid="stMetricValue"] {{
+            color: {BLUE} !important; font-weight: 700; font-size: 1.4rem !important;
+        }}
+        [data-testid="stMetricLabel"] {{ color: #666; font-size: 0.8rem; }}
+        .block-container {{ padding-top: 2rem; }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    with st.sidebar:
+        st.markdown("## SmartCart")
+        st.markdown("**E-Commerce Growth Analytics**")
+        st.divider()
+        st.caption("Online Retail II · 5,878 customers")
+        st.caption("McGill Desautels MMA · BUSA 649")
+
+
 PLOTLY_LAYOUT = dict(
     plot_bgcolor="white",
     paper_bgcolor="white",
@@ -80,6 +111,24 @@ def load_group_comparison() -> pd.DataFrame:
 def load_clv_bgnbd() -> pd.DataFrame:
     with sqlite3.connect(DB_PATH) as con:
         return pd.read_sql("SELECT * FROM clv_bgnbd", con)
+
+
+@st.cache_data
+def load_cohort_retention() -> pd.DataFrame:
+    with sqlite3.connect(DB_PATH) as con:
+        return pd.read_sql("SELECT * FROM cohort_retention", con)
+
+
+@st.cache_data
+def load_cohort_revenue() -> pd.DataFrame:
+    with sqlite3.connect(DB_PATH) as con:
+        return pd.read_sql("SELECT * FROM cohort_revenue", con)
+
+
+@st.cache_data
+def load_segmentation_metrics() -> pd.DataFrame:
+    with sqlite3.connect(DB_PATH) as con:
+        return pd.read_sql("SELECT * FROM segmentation_metrics ORDER BY k", con)
 
 
 @st.cache_data

@@ -19,7 +19,9 @@ from utils import (
     load_clv,
     load_clv_bgnbd,
     load_segment_profiles,
+    load_segmentation_metrics,
     load_segments,
+    render_sidebar,
 )
 
 st.set_page_config(page_title="Segmentation — SmartCart", layout="wide")
@@ -44,6 +46,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+render_sidebar()
+
 st.title("Customer Segmentation")
 st.markdown(
     "RFM-based K-Means clustering (k=4). Segments are assigned by recency, "
@@ -54,6 +58,7 @@ st.markdown(
 segments = load_segments()
 clv = load_clv()
 profiles = load_segment_profiles()
+metrics = load_segmentation_metrics()
 try:
     clv_bgnbd = load_clv_bgnbd()
     has_bgnbd = True
@@ -109,6 +114,53 @@ with col2:
     fig2.update_traces(textposition="outside")
     fig2.update_layout(**PLOTLY_LAYOUT, xaxis_title=None, yaxis_title="Avg CLV (£)")
     st.plotly_chart(fig2, use_container_width=True)
+
+# ── Silhouette score — k selection validation ─────────────────────────────────
+st.subheader("How We Chose 4 Segments")
+st.markdown(
+    "We tested 4 to 8 segments and picked the number with the highest **silhouette score** — "
+    "a measure of how well-separated and internally consistent the groups are "
+    "(higher is better; above 0.25 is considered meaningful)."
+)
+
+sil_col1, sil_col2 = st.columns([2, 1])
+
+with sil_col1:
+    colors = [ACCENT if k == 4 else BLUE for k in metrics["k"]]
+    fig_sil = px.bar(
+        metrics,
+        x="k",
+        y="silhouette_score",
+        text=metrics["silhouette_score"].map("{:.3f}".format),
+        labels={"k": "Number of segments", "silhouette_score": "Silhouette score"},
+    )
+    fig_sil.update_traces(marker_color=colors, textposition="outside")
+    fig_sil.add_hline(y=0.25, line_dash="dot", line_color=ACCENT, line_width=1.5)
+    fig_sil.add_annotation(
+        x=metrics["k"].max(),
+        y=0.25,
+        text="0.25 — meaningful threshold",
+        showarrow=False,
+        yshift=10,
+        xanchor="right",
+        font=dict(color=ACCENT, size=11),
+    )
+    fig_sil.update_layout(
+        **PLOTLY_LAYOUT,
+        xaxis=dict(tickmode="array", tickvals=metrics["k"].tolist()),
+        yaxis_range=[0, metrics["silhouette_score"].max() * 1.2],
+    )
+    st.plotly_chart(fig_sil, use_container_width=True)
+
+with sil_col2:
+    best = metrics.loc[metrics["silhouette_score"].idxmax()]
+    st.metric("Chosen segments (k)", int(best["k"]))
+    st.metric("Silhouette score", f"{best['silhouette_score']:.3f}")
+    st.caption(
+        "k=4 has the highest silhouette score across all tested values, "
+        "meaning the 4-segment solution produces the most distinct and internally "
+        "consistent customer groups. The highlighted bar (orange) marks the chosen k."
+    )
 
 # ── RFM scatter ────────────────────────────────────────────────────────────────
 st.subheader("RFM Scatter — Frequency vs. Recency")

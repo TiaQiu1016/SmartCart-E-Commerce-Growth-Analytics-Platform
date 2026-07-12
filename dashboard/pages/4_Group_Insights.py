@@ -20,6 +20,7 @@ from utils import (
     load_group_comparison,
     load_segment_summary,
     load_segments,
+    render_sidebar,
 )
 
 st.set_page_config(page_title="Group Insights — SmartCart", layout="wide")
@@ -40,6 +41,8 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+render_sidebar()
 
 st.title("Customer Group Insights")
 st.markdown(

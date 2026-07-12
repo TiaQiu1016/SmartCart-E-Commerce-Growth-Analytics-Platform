@@ -19,6 +19,7 @@ from utils import (
     load_clv,
     load_propensity,
     load_segments,
+    render_sidebar,
 )
 
 st.set_page_config(page_title="Propensity Scoring — SmartCart", layout="wide")
@@ -37,6 +38,8 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+render_sidebar()
 
 st.title("Purchase Propensity Scoring")
 st.markdown(

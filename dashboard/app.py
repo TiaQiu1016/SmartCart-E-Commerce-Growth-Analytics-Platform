@@ -22,6 +22,7 @@ from utils import (
     load_segment_summary,
     load_segments,
     load_transactions_summary,
+    render_sidebar,
 )
 
 st.set_page_config(
@@ -34,9 +35,6 @@ st.set_page_config(
 st.markdown(
     f"""
     <style>
-    [data-testid="stSidebar"] {{ background-color: {BLUE}; }}
-    [data-testid="stSidebar"] * {{ color: white !important; }}
-    [data-testid="stSidebar"] .stSelectbox label {{ color: white !important; }}
     h1, h2, h3 {{ color: {BLUE}; }}
     [data-testid="stMetric"] {{
         background: white;
@@ -53,20 +51,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ── sidebar ───────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("## SmartCart")
-    st.markdown("**E-Commerce Growth Analytics**")
-    st.markdown("---")
-    st.markdown("**Navigate**")
-    st.markdown("- Overview ← you are here")
-    st.markdown("- Segmentation")
-    st.markdown("- Propensity Scoring")
-    st.markdown("- Market Basket")
-    st.markdown("- Group Insights")
-    st.markdown("---")
-    st.markdown("📊 Online Retail II · 5,878 customers")
-    st.markdown("McGill Desautels MMA · BUSA 649")
+render_sidebar()
 
 # ── data ─────────────────────────────────────────────────────────────────────
 summary = load_transactions_summary()
