@@ -78,7 +78,12 @@ def segment_action(segment: dict[str, Any]) -> str:
         f"purchase propensity {percent(propensity)}",
     ]
     if p_alive is not None:
-        evidence.append(f"BG/NBD p_alive {percent(p_alive)}")
+        p_alive_note = (
+            " (note: BG/NBD can overestimate p_alive for very inactive customers)"
+            if name == "Hibernating" and float(p_alive) > 0.85
+            else ""
+        )
+        evidence.append(f"BG/NBD p_alive {percent(p_alive)}{p_alive_note}")
     if repeat_gap is not None:
         evidence.append(f"insufficient repeat history {percent(repeat_gap)}")
 
@@ -203,11 +208,22 @@ def build_brief(payload: dict[str, Any]) -> str:
     churn_lines = churn_signals(churn_by_segment)
     if churn_lines:
         lines.extend(churn_lines)
-        lines.append(
-            "- Interpret this as a model-output diagnostic. A fully leakage-free "
-            "segment validation still needs segment labels created at the same "
-            "feature cutoff as the churn model."
+        uses_cutoff_segments = any(
+            row.get("validation_scope") == "heldout_test" for row in churn_by_segment
         )
+        if uses_cutoff_segments:
+            lines.append(
+                "- These results use `segments_at_cutoff` (pre-cutoff RFM features only) "
+                "matched against post-cutoff actual churn outcomes on the held-out test set. "
+                "The design is leakage-free: segment labels and churn labels come from "
+                "non-overlapping time windows."
+            )
+        else:
+            lines.append(
+                "- Interpret this as a model-output diagnostic. A fully leakage-free "
+                "segment validation still needs segment labels created at the same "
+                "feature cutoff as the churn model."
+            )
     else:
         lines.append("Predictive churn outputs are not available yet.")
 
