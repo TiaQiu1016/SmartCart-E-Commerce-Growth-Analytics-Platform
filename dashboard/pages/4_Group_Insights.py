@@ -51,6 +51,12 @@ st.markdown(
     "These are **observational comparisons**, not randomized A/B tests — effect sizes "
     "indicate practical magnitude independent of sample size."
 )
+st.info(
+    "**V1 comparisons** (tabs below) use full-period segment labels and a descriptive "
+    "90-day recency snapshot — not the predictive churn model. For a leakage-free "
+    "segment vs. future-churn comparison, see the **Churn Risk** page, which uses "
+    "`segments_at_cutoff` and `churn_scores` from the XGBoost model."
+)
 
 # ── data ──────────────────────────────────────────────────────────────────────
 comp = load_group_comparison()

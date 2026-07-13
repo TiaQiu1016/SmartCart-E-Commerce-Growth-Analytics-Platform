@@ -50,7 +50,11 @@ st.markdown(
 )
 
 # ── data ──────────────────────────────────────────────────────────────────────
-propensity = load_propensity()
+try:
+    propensity = load_propensity()
+except Exception:
+    st.error("The `propensity_scores` table is not available yet. Run `python src/propensity_model.py` before opening this page.")
+    st.stop()
 segments = load_segments()
 clv = load_clv()
 

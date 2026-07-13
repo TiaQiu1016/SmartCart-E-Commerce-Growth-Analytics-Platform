@@ -77,7 +77,7 @@ k1.metric("Total Customers", f"{summary['n_customers']:,}")
 k2.metric("Total Revenue", f"{CURRENCY}{summary['total_revenue']/1_000_000:.1f}M")
 k3.metric("Total Invoices", f"{summary['n_invoices']:,}")
 k4.metric("Repeat Customer Rate", f"{repeat_pct:.1f}%")
-k5.metric("Avg CLV Estimate", f"{CURRENCY}{avg_clv:,.0f}")
+k5.metric("Avg Baseline CLV", f"{CURRENCY}{avg_clv:,.0f}", help="RFM-based baseline estimate. See Segmentation page for BG/NBD CLV.")
 
 st.divider()
 

@@ -57,8 +57,12 @@ st.markdown(
 )
 
 # ── data ──────────────────────────────────────────────────────────────────────
-rules = load_association_rules()
-recs = load_recommendations()
+try:
+    rules = load_association_rules()
+    recs = load_recommendations()
+except Exception:
+    st.error("Product recommendation tables are not available yet. Run `python src/market_basket.py` before opening this page.")
+    st.stop()
 
 complete = rules[rules["rule_type"] == "Complete the Set"]
 cross = rules[rules["rule_type"] == "Often Bought With"]

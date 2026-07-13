@@ -45,8 +45,12 @@ st.markdown(
 )
 
 # ── data ──────────────────────────────────────────────────────────────────────
-retention = load_cohort_retention()
-revenue = load_cohort_revenue()
+try:
+    retention = load_cohort_retention()
+    revenue = load_cohort_revenue()
+except Exception:
+    st.error("Cohort tables are not available yet. Run `python src/cohort_analysis.py` before opening this page.")
+    st.stop()
 
 # ── KPI row ───────────────────────────────────────────────────────────────────
 m1 = retention[retention["period"] == 1]["retention_rate"].mean()
