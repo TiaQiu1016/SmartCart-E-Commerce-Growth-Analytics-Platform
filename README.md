@@ -114,6 +114,7 @@ python src/churn_model.py        # leakage-free churn model (logistic + XGBoost)
 python src/propensity_model.py   # leakage-free 30-day purchase propensity model -> `propensity_scores`
 python src/market_basket.py      # Apriori association rules -> `association_rules`, `product_recommendations`
 python src/group_comparison.py   # observational group tests -> `group_comparison_results`, `segment_comparison_summary`
+python src/cohort_analysis.py    # monthly cohort retention and revenue -> `cohort_retention`, `cohort_revenue`
 python src/make_figures.py       # EDA / descriptive figures
 python src/prepare_insight_inputs.py  # computed module outputs -> local structured JSON
 python src/generate_insight_brief.py  # structured JSON -> reviewable Markdown insight brief draft

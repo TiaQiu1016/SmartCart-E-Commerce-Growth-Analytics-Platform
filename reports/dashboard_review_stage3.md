@@ -16,6 +16,7 @@ readiness for Stage 3 integration, not visual polish.
 | Propensity | Working structure | Shows score distribution, segment score differences, campaign threshold planner, and top customers. |
 | Market Basket | Strong coverage | Includes top rules, product lookup, rule explorer, and plain-language metric explanations. |
 | Group Insights | Working structure | Shows UK vs. non-UK, Champions vs. Hibernating, and segment summaries with effect sizes. |
+| Cohort Retention | V1 available | Shows cohort retention heatmap, retention curves, and revenue per customer by acquisition cohort. |
 | Churn | V1 available | Uses `churn_scores` for score distribution, segment churn diagnostics, and a high-risk customer list. |
 | AI Insight Brief | V1 available | Displays `reports/ai_insight_brief_draft.md`, structured input status, and generation guardrails. |
 
@@ -24,7 +25,7 @@ readiness for Stage 3 integration, not visual polish.
 - Ran Python syntax checks on all dashboard pages and shared dashboard utilities.
 - Confirmed dashboard utility loaders include core tables such as `segments`,
   `clv`, `clv_bgnbd`, `propensity_scores`, market-basket outputs, and group
-  comparison outputs.
+  comparison outputs, plus cohort and churn outputs after the merge.
 - Confirmed the dashboard is currently blocked from a churn page only because
   the required `churn_scores` output was missing before this update.
 

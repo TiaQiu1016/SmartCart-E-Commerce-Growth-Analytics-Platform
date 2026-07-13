@@ -21,12 +21,13 @@ Local database checked: `data/smartcart.db`.
 | Market basket | `association_rules`, `product_recommendations` | Available | Supports top product-pair recommendations. |
 | Group comparison V1 | `group_comparison_results`, `segment_comparison_summary` | Available | Descriptive comparisons and effect sizes are available. |
 | Predictive churn | `churn_scores` | Code available; local table written after `src/churn_model.py` runs | Needed for leakage-free group-comparison V2 and AI churn summaries. |
+| Cohort retention | `cohort_retention`, `cohort_revenue` | Code available; local tables written after `src/cohort_analysis.py` runs | Supports retention heatmap and cohort revenue dashboard views. |
 
 ## Stage 3 implications
 
 The dashboard and AI input layer can already use segmentation, baseline CLV,
-propensity, market-basket, and group-comparison V1 outputs. Enhanced CLV can be
-added after the BG/NBD script writes `clv_bgnbd` to SQLite.
+propensity, market-basket, group-comparison V1, churn, and cohort outputs.
+Enhanced CLV can be added after the BG/NBD script writes `clv_bgnbd` to SQLite.
 
 Group-comparison V2 should not use the current recency-based churn snapshot as
 evidence that segments independently predict churn, because the snapshot and

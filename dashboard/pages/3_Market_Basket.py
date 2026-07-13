@@ -17,6 +17,7 @@ from utils import (
     PLOTLY_LAYOUT,
     load_association_rules,
     load_recommendations,
+    render_sidebar,
 )
 
 st.set_page_config(page_title="Market Basket — SmartCart", layout="wide")
@@ -43,6 +44,8 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+render_sidebar()
 
 st.title("Product Recommendations")
 st.markdown(

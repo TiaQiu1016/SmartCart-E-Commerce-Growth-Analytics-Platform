@@ -18,6 +18,7 @@ from utils import (
     load_churn_scores,
     load_clv,
     load_segments,
+    render_sidebar,
 )
 
 st.set_page_config(page_title="Churn Risk - SmartCart", layout="wide")
@@ -36,6 +37,8 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+render_sidebar()
 
 st.title("Churn Risk")
 st.markdown(

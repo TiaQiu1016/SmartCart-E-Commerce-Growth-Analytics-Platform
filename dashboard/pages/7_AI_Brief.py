@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 
-from utils import ACCENT, BLUE
+from utils import ACCENT, BLUE, render_sidebar
 
 ROOT = Path(__file__).resolve().parents[2]
 BRIEF_PATH = ROOT / "reports" / "ai_insight_brief_draft.md"
@@ -37,6 +37,8 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+render_sidebar()
 
 st.title("AI Insight Brief")
 st.markdown(
