@@ -2,8 +2,6 @@
 
 This document pins the single customer identifier, the schema of every SQLite
 table, and the join QA results confirming all modules agree on customer coverage.
-It directly addresses the PR2 feedback: "pin down one customer identifier and data
-contract so every module agrees."
 
 ---
 
