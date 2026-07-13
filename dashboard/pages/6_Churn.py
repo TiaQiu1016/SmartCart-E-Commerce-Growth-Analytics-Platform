@@ -4,9 +4,11 @@ Churn page: customer-level future churn labels and predicted churn risk.
 
 import sys
 from pathlib import Path
+import sqlite3
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import pandas as pd
 import plotly.express as px
 import streamlit as st
 
@@ -18,6 +20,7 @@ from utils import (
     load_churn_scores,
     load_clv,
     load_segments,
+    DB_PATH,
     render_sidebar,
 )
 
@@ -61,9 +64,29 @@ except Exception as exc:
 segments = load_segments()
 clv = load_clv()
 
+with sqlite3.connect(DB_PATH) as con:
+    has_segments_at_cutoff = (
+        con.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='segments_at_cutoff'"
+        ).fetchone()
+        is not None
+    )
+    if has_segments_at_cutoff:
+        segment_source = "segments_at_cutoff"
+        segment_frame = pd.read_sql(
+            """
+            SELECT customer_id, segment, recency_days, frequency, monetary
+            FROM segments_at_cutoff
+            """,
+            con,
+        )
+    else:
+        segment_source = "segments"
+        segment_frame = segments[["customer_id", "segment", "recency_days", "frequency", "monetary"]]
+
 full = (
     churn.merge(
-        segments[["customer_id", "segment", "recency_days", "frequency", "monetary"]],
+        segment_frame,
         on="customer_id",
         how="left",
     )
@@ -93,7 +116,7 @@ k4.metric("XGBoost AUC", auc_note)
 
 st.caption(
     f"Feature cutoff: {cutoff}. Label window: {window} days. "
-    "Validation charts use the held-out test set when available."
+    f"Validation charts use the held-out test set when available. Segment source: `{segment_source}`."
 )
 
 st.divider()
@@ -173,11 +196,17 @@ fig_compare.update_traces(textposition="outside")
 fig_compare.update_layout(**PLOTLY_LAYOUT, xaxis_title=None, yaxis_tickformat=".0%")
 st.plotly_chart(fig_compare, use_container_width=True)
 
-st.info(
-    "Interpret segment-level churn as a diagnostic for now. A fully leakage-free "
-    "Group Comparison V2 still needs `segments_at_cutoff`, where customer "
-    "segments are assigned using the same pre-cutoff window as the churn model."
-)
+if has_segments_at_cutoff:
+    st.success(
+        "This page uses `segments_at_cutoff`, so segment labels are assigned from "
+        "the same pre-cutoff window as the churn model."
+    )
+else:
+    st.info(
+        "Interpret segment-level churn as a diagnostic for now. A fully leakage-free "
+        "Group Comparison V2 needs `segments_at_cutoff`, where customer "
+        "segments are assigned using the same pre-cutoff window as the churn model."
+    )
 
 st.divider()
 

@@ -184,6 +184,31 @@ def build_market_basket_inputs(con: sqlite3.Connection) -> list[dict[str, Any]]:
 def build_predictive_churn_inputs(
     con: sqlite3.Connection,
 ) -> tuple[list[dict[str, Any]], str | None]:
+    if table_exists(con, "segment_churn_v2_summary"):
+        frame = pd.read_sql(
+            """
+            SELECT
+                segment,
+                evaluated_customers,
+                actual_future_churn_rate,
+                avg_predicted_churn_probability,
+                validation_scope,
+                feature_cutoff_date,
+                label_window_days
+            FROM segment_churn_v2_summary
+            WHERE validation_scope = 'heldout_test'
+            ORDER BY actual_future_churn_rate DESC
+            """,
+            con,
+        )
+        if not frame.empty:
+            for column in [
+                "actual_future_churn_rate",
+                "avg_predicted_churn_probability",
+            ]:
+                frame[column] = frame[column].map(finite_or_none)
+            return records(frame), None
+
     table = "churn_scores"
     required = {
         "customer_id",

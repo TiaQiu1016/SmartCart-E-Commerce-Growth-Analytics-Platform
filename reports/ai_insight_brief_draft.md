@@ -1,6 +1,6 @@
 # SmartCart AI Insight Brief Draft
 
-Generated: 2026-07-11 11:26 UTC
+Generated: 2026-07-13 08:27 UTC
 
 ## Scope and Guardrails
 
