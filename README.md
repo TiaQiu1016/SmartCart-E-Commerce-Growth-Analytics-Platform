@@ -115,6 +115,8 @@ python src/propensity_model.py   # leakage-free 30-day purchase propensity model
 python src/market_basket.py      # Apriori association rules -> `association_rules`, `product_recommendations`
 python src/group_comparison.py   # observational group tests -> `group_comparison_results`, `segment_comparison_summary`
 python src/make_figures.py       # EDA / descriptive figures
+python src/prepare_insight_inputs.py  # computed module outputs -> local structured JSON
+python src/generate_insight_brief.py  # structured JSON -> reviewable Markdown insight brief draft
 ```
 
 SQL scripts in `sql/` can be run standalone, e.g. `sqlite3 data/smartcart.db < sql/eda_summary.sql`.

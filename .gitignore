@@ -4,6 +4,7 @@ data/*.xlsx
 data/*.db
 data/*.db-journal
 data/*.sqlite
+data/insight_inputs.json
 !data/.gitkeep
 
 # Python

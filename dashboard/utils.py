@@ -55,6 +55,8 @@ def render_sidebar() -> None:
         st.divider()
         st.caption("Online Retail II · 5,878 customers")
         st.caption("McGill Desautels MMA · BUSA 649")
+        st.divider()
+        st.caption("Pages: Overview · Segmentation · Propensity · Market Basket · Group Insights · Cohort · Churn Risk")
 
 
 PLOTLY_LAYOUT = dict(
@@ -87,6 +89,12 @@ def load_segment_profiles() -> pd.DataFrame:
 def load_propensity() -> pd.DataFrame:
     with sqlite3.connect(DB_PATH) as con:
         return pd.read_sql("SELECT * FROM propensity_scores", con)
+
+
+@st.cache_data
+def load_churn_scores() -> pd.DataFrame:
+    with sqlite3.connect(DB_PATH) as con:
+        return pd.read_sql("SELECT * FROM churn_scores", con)
 
 
 @st.cache_data
