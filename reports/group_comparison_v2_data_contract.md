@@ -65,8 +65,15 @@ actions.
 
 ## Current status
 
-`src/churn_model.py` now writes the required `churn_scores` table after the
-churn model runs. The remaining blocker for a fully leakage-free V2 is
-`segments_at_cutoff`: the current `segments` table is still based on the full
-segmentation output, so segment-level future churn comparisons should be treated
-as an interim diagnostic until pre-cutoff segment labels exist.
+`src/churn_model.py` writes the required `churn_scores` table after the churn
+model runs. `src/segments_at_cutoff.py` now writes the required
+`segments_at_cutoff` table and V2 validation outputs:
+
+- `segments_at_cutoff`
+- `segment_churn_v2_summary`
+- `segment_churn_v2_results`
+
+The V2 comparison now uses pre-cutoff segment labels joined to post-cutoff
+future churn outcomes. The current dashboard can still show the full-period
+`segments` table for current-state business views, but V2 evidence should use
+`segments_at_cutoff`.

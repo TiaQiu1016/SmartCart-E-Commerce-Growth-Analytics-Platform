@@ -34,6 +34,7 @@ across customers or invoices).
 | `clv_bgnbd` | 5,878 | 5,878 | `src/clv_bgnbd.py` |
 | `propensity_scores` | 5,717 | 5,717 | `src/propensity_model.py` |
 | `churn_scores` | 5,281 | 5,281 | `src/churn_model.py` |
+| `segments_at_cutoff` | 5,281 | 5,281 | `src/segments_at_cutoff.py` |
 
 **Note on propensity_scores:** 161 customers are absent from `propensity_scores`
 because they had no transaction history before the model cutoff date and therefore
@@ -60,6 +61,8 @@ These tables have no `customer_id` column and are not joined to customer-level o
 | `product_recommendations` | 35 | `stock_code` | `src/market_basket.py` |
 | `cohort_retention` | 325 | `cohort_month`, `period` | `src/cohort_analysis.py` |
 | `cohort_revenue` | 325 | `cohort_month`, `period` | `src/cohort_analysis.py` |
+| `segment_churn_v2_summary` | 8 | `segment`, `validation_scope` | `src/segments_at_cutoff.py` |
+| `segment_churn_v2_results` | 2 | `comparison`, `test_type` | `src/segments_at_cutoff.py` |
 
 ---
 
@@ -145,6 +148,19 @@ These tables have no `customer_id` column and are not joined to customer-level o
 | `is_test_set` | INTEGER | 1 for held-out validation rows, 0 for training rows |
 | `model_name` | TEXT | Model used for the primary prediction, currently `xgboost` |
 
+### `segments_at_cutoff`
+| Column | Type | Notes |
+| --- | --- | --- |
+| `customer_id` | INTEGER | Primary key for customers with pre-cutoff history |
+| `recency_days` | REAL | Days since last pre-cutoff purchase |
+| `frequency` | REAL | Distinct invoices on or before the cutoff |
+| `monetary` | REAL | Revenue on or before the cutoff |
+| `cluster` | INTEGER | K-Means cluster assigned from pre-cutoff RFM |
+| `segment` | TEXT | Human-readable historical segment label |
+| `recommended_action` | TEXT | Action attached to the historical segment |
+| `feature_cutoff_date` | TEXT | Cutoff matching `churn_scores.feature_cutoff_date` |
+| `label_window_days` | INTEGER | Future churn label window, currently 90 days |
+
 ---
 
 ## Join QA Results
@@ -158,6 +174,7 @@ Verified on `data/smartcart.db` as of Jul 12, 2026:
 | `segments` → `clv_bgnbd` on `customer_id` | 5,878 / 5,878 match (100%) |
 | `segments` → `propensity_scores` on `customer_id` | 5,717 / 5,878 match (97.3%) — 161 unscored by design |
 | `segments` → `churn_scores` on `customer_id` | 5,281 / 5,878 match (89.8%) — 597 unscored by churn cutoff design |
+| `churn_scores` → `segments_at_cutoff` on `customer_id` | 5,281 / 5,281 match (100%) |
 | Orphan `customer_id` in any table not in `transactions` | 0 |
 
 All customer-level modules use the same 5,878 integer customer IDs derived from
@@ -181,6 +198,10 @@ online_retail_II.csv
                     │       └── clv_bgnbd          (joins segments + clv)
                     ├── churn_model.py             (leakage-free time split)
                     │       └── churn_scores       (customer-level labels + model probabilities)
+                    ├── segments_at_cutoff.py
+                    │       ├── segments_at_cutoff
+                    │       ├── segment_churn_v2_summary
+                    │       └── segment_churn_v2_results
                     ├── propensity_model.py        (leakage-free time split)
                     │       └── propensity_scores
                     ├── market_basket.py

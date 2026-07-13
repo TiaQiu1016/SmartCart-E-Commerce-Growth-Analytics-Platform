@@ -28,7 +28,8 @@ The JSON contains:
 - `predictive_churn_by_segment`: actual future churn rate and average predicted
   churn probability, but only when a valid customer-level `churn_scores` table
   exists. If `is_test_set` is present, this section uses held-out test-set
-  customers only.
+  customers only. If `segment_churn_v2_summary` exists, it is used first so
+  churn summaries are based on `segments_at_cutoff`.
 - `group_comparisons`: statistical tests and effect sizes when
   `group_comparison_results` exists.
 - `top_product_recommendations`: the ten highest-lift product recommendations.

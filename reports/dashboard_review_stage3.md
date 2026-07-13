@@ -32,8 +32,9 @@ readiness for Stage 3 integration, not visual polish.
 ## Issues and Follow-ups
 
 1. **Churn page V1 is available.** It uses `churn_scores` after
-   `src/churn_model.py` is run. The remaining improvement is to replace current
-   segment joins with `segments_at_cutoff` once that table exists.
+   `src/churn_model.py` is run. It now prefers `segments_at_cutoff` when that
+   table exists, so the segment-level churn view can use the same pre-cutoff
+   window as the churn model.
 2. **AI brief page V1 is available.** It displays the deterministic draft at
    `reports/ai_insight_brief_draft.md` and the structured input status from
    `data/insight_inputs.json`. A later version can replace the deterministic
@@ -41,7 +42,7 @@ readiness for Stage 3 integration, not visual polish.
    guardrails.
 3. **Group Insights should keep the circularity caveat visible.** Current
    recency-based churn snapshots are descriptive. Final V2 should use
-   `churn_scores` and, ideally, `segments_at_cutoff`.
+   `churn_scores` and `segments_at_cutoff`.
 4. **Overview KPIs still use baseline CLV.** This is acceptable for now, but the
    dashboard should eventually clarify whether a KPI uses baseline CLV or
    BG/NBD CLV.
@@ -51,5 +52,4 @@ readiness for Stage 3 integration, not visual polish.
 1. Update Overview to mention whether displayed CLV is baseline or BG/NBD.
 2. Add missing-table handling in dashboard utilities so the app fails with a
    friendly message when a module has not been run yet.
-3. Add `segments_at_cutoff` and update the Churn page once final V2 validation
-   is ready.
+3. Add final narrative polish around the V2 churn validation results.

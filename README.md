@@ -111,6 +111,7 @@ python src/build_database.py     # loads + cleans data, builds `transactions` an
 python src/segmentation_clv.py   # K-Means segments + baseline CLV -> `segments`, `clv`
 python src/clv_bgnbd.py          # BG/NBD + Gamma-Gamma CLV enhancement -> `clv_bgnbd`
 python src/churn_model.py        # leakage-free churn model (logistic + XGBoost)
+python src/segments_at_cutoff.py # pre-cutoff segments + future churn V2 validation
 python src/propensity_model.py   # leakage-free 30-day purchase propensity model -> `propensity_scores`
 python src/market_basket.py      # Apriori association rules -> `association_rules`, `product_recommendations`
 python src/group_comparison.py   # observational group tests -> `group_comparison_results`, `segment_comparison_summary`
