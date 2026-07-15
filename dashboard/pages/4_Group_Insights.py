@@ -46,16 +46,16 @@ render_sidebar()
 
 st.title("Customer Group Insights")
 st.markdown(
-    "Statistical comparisons between customer groups using Welch t-test, Mann-Whitney U, "
-    "Cohen's d (numeric), chi-square, and Cramér's V (categorical). "
-    "These are **observational comparisons**, not randomized A/B tests — effect sizes "
-    "indicate practical magnitude independent of sample size."
+    "Are different customer groups behaving differently? This page compares groups — "
+    "UK vs. Non-UK customers, and Champions vs. Hibernating — across key metrics like "
+    "revenue, order frequency, and lifetime value. "
+    "These are **observational comparisons**, not experiments: they show where differences "
+    "exist, not why."
 )
 st.info(
-    "**V1 comparisons** (tabs below) use full-period segment labels and a descriptive "
-    "90-day recency snapshot — not the predictive churn model. For a leakage-free "
-    "segment vs. future-churn comparison, see the **Churn Risk** page, which uses "
-    "`segments_at_cutoff` and `churn_scores` from the XGBoost model."
+    "**Note:** The inactive rate in the Segment Profiles tab shows customers who haven't "
+    "purchased in the past 90 days — it's a descriptive snapshot. "
+    "For predictive churn scores, see the **Churn Risk** page."
 )
 
 # ── data ──────────────────────────────────────────────────────────────────────
@@ -87,12 +87,11 @@ with tab1:
     welch = uk_comp[uk_comp["test_type"] == "Welch t-test"]
     for _, row in welch.iterrows():
         sig_class = "sig" if row["p_value"] < 0.05 else "insig"
-        sig_label = "Significant (p < 0.05)" if row["p_value"] < 0.05 else "Not significant"
+        sig_label = "Notable difference" if row["p_value"] < 0.05 else "Similar"
         st.markdown(
             f"**{row['metric']}** &nbsp;|&nbsp; "
             f"UK avg: {row['group_a_mean']:.1f} &nbsp;·&nbsp; Non-UK avg: {row['group_b_mean']:.1f} "
-            f"&nbsp;|&nbsp; Cohen's d: {row['effect_size']:.3f} "
-            f"&nbsp;|&nbsp; p = {row['p_value']:.4f} "
+            f"&nbsp;|&nbsp; Difference size: {row['effect_size']:.3f} "
             f"&nbsp;<span class='{sig_class}'>({sig_label})</span>",
             unsafe_allow_html=True,
         )
@@ -115,7 +114,7 @@ with tab1:
         st.plotly_chart(fig_bar, use_container_width=True)
 
     # Effect size dot plot
-    st.markdown("#### Effect Size (Cohen's d) across Metrics")
+    st.markdown("#### How Large Is the Difference? (by Metric)")
     effect_df = welch.drop_duplicates("metric")[["metric", "effect_size", "p_value"]].copy()
     effect_df["significant"] = effect_df["p_value"] < 0.05
     effect_df["color"] = effect_df["significant"].map({True: BLUE, False: "#cccccc"})
@@ -128,7 +127,7 @@ with tab1:
         orientation="h",
         color="significant",
         color_discrete_map={True: BLUE, False: "#cccccc"},
-        labels={"effect_size": "Cohen's d", "metric": "", "significant": "p < 0.05"},
+        labels={"effect_size": "Difference size", "metric": "", "significant": "Notable difference"},
         text=effect_df["effect_size"].map("{:.3f}".format),
     )
     fig_eff.add_vline(x=0.2, line_dash="dot", line_color="#aaa", annotation_text="small (0.2)")
@@ -154,19 +153,18 @@ with tab2:
         welch_ch = champ_comp[champ_comp["test_type"] == "Welch t-test"]
         for _, row in welch_ch.iterrows():
             sig_class = "sig" if row["p_value"] < 0.05 else "insig"
-            sig_label = "Significant (p < 0.05)" if row["p_value"] < 0.05 else "Not significant"
+            sig_label = "Notable difference" if row["p_value"] < 0.05 else "Similar"
             st.markdown(
                 f"**{row['metric']}** &nbsp;|&nbsp; "
                 f"Champions avg: {row['group_a_mean']:.1f} &nbsp;·&nbsp; "
                 f"Hibernating avg: {row['group_b_mean']:.1f} "
-                f"&nbsp;|&nbsp; Cohen's d: {row['effect_size']:.3f} "
-                f"&nbsp;|&nbsp; p = {row['p_value']:.4f} "
+                f"&nbsp;|&nbsp; Difference size: {row['effect_size']:.3f} "
                 f"&nbsp;<span class='{sig_class}'>({sig_label})</span>",
                 unsafe_allow_html=True,
             )
 
         # Effect sizes
-        st.markdown("#### Effect Sizes")
+        st.markdown("#### How Large Is the Difference?")
         effect_ch = welch_ch.drop_duplicates("metric")[["metric", "effect_size", "p_value"]].copy()
         effect_ch["significant"] = effect_ch["p_value"] < 0.05
         effect_ch = effect_ch.sort_values("effect_size", ascending=True)
@@ -179,7 +177,7 @@ with tab2:
             color="significant",
             color_discrete_map={True: ACCENT, False: "#cccccc"},
             text=effect_ch["effect_size"].map("{:.2f}".format),
-            labels={"effect_size": "Cohen's d", "metric": "", "significant": "p < 0.05"},
+            labels={"effect_size": "Difference size", "metric": "", "significant": "Notable difference"},
         )
         fig_ch.add_vline(x=0.2, line_dash="dot", line_color="#aaa", annotation_text="small")
         fig_ch.add_vline(x=0.8, line_dash="dot", line_color="#888", annotation_text="large")
@@ -231,7 +229,7 @@ with tab3:
     st.subheader("Cross-Segment Summary")
     st.markdown(
         "All four segments compared on key metrics. "
-        "Churn snapshot = share of customers inactive for 90+ days (descriptive, not the predictive model)."
+        "Inactive rate = share of customers who have not purchased in 90+ days."
     )
 
     disp = summary.copy()
@@ -280,6 +278,6 @@ with tab3:
 
 st.divider()
 st.caption(
-    "Statistical tests: Welch t-test + Mann-Whitney U for numeric metrics; "
-    "chi-square + Cramér's V for categorical. Observational comparisons only — not randomized A/B tests."
+    "Observational comparisons only — differences are descriptive, not causal. "
+    "Blue bars indicate a notable difference between groups; grey bars indicate groups are similar."
 )

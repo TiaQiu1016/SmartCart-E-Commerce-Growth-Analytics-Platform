@@ -67,7 +67,7 @@ avg_clv = clv["clv_estimate"].mean()
 st.markdown(f"# SmartCart Growth Analytics")
 st.markdown(
     "Turn transaction data into segmentation, lifetime value, churn signals, "
-    "product recommendations, and group insights — all from a single SQLite database."
+    "product recommendations, and group insights — all from a single database."
 )
 st.divider()
 

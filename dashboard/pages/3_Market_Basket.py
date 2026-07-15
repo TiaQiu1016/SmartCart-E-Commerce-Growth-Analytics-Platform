@@ -64,6 +64,9 @@ except Exception:
     st.error("Product recommendation tables are not available yet. Run `python src/market_basket.py` before opening this page.")
     st.stop()
 
+desc_map = {str(row["stock_code"]): row["description"] for _, row in recs.iterrows()}
+rules["antecedent_name"] = rules["antecedents"].map(lambda c: desc_map.get(str(c), str(c)))
+rules["consequent_name"] = rules["consequents"].map(lambda c: desc_map.get(str(c), str(c)))
 complete = rules[rules["rule_type"] == "Complete the Set"]
 cross = rules[rules["rule_type"] == "Often Bought With"]
 
@@ -92,7 +95,7 @@ with tab1:
     with col1:
         st.subheader("Complete the Set — Top Pairs")
         top_complete = complete.nlargest(10, "lift")[
-            ["antecedents", "consequents", "support", "confidence", "lift"]
+            ["antecedent_name", "consequent_name", "support", "confidence", "lift"]
         ].copy()
         top_complete.columns = ["If customer buys", "They often also buy", "Frequency", "Buy rate", "Strength"]
         top_complete["Frequency"] = top_complete["Frequency"].map("{:.1%}".format)
@@ -103,7 +106,7 @@ with tab1:
     with col2:
         st.subheader("Often Bought With — Top Pairs")
         top_cross = cross.nlargest(10, "lift")[
-            ["antecedents", "consequents", "support", "confidence", "lift"]
+            ["antecedent_name", "consequent_name", "support", "confidence", "lift"]
         ].copy()
         top_cross.columns = ["If customer buys", "They often also buy", "Frequency", "Buy rate", "Strength"]
         top_cross["Frequency"] = top_cross["Frequency"].map("{:.1%}".format)
@@ -119,8 +122,8 @@ with tab1:
         color="rule_type",
         color_discrete_map={"Complete the Set": BLUE, "Often Bought With": ACCENT},
         points="all",
-        hover_data={"antecedents": True, "consequents": True},
-        labels={"lift": "Strength (×)", "rule_type": ""},
+        hover_data={"antecedent_name": True, "consequent_name": True},
+        labels={"lift": "Strength (×)", "rule_type": "", "antecedent_name": "If customer buys", "consequent_name": "They also buy"},
     )
     fig_lift.update_layout(**PLOTLY_LAYOUT, showlegend=False, xaxis_title=None, yaxis_title="Strength (higher = stronger association)")
     st.plotly_chart(fig_lift, use_container_width=True)
@@ -135,8 +138,8 @@ with tab1:
         color="lift",
         color_continuous_scale=[[0, "#C8D8E8"], [1, BLUE]],
         symbol="rule_type",
-        hover_data={"antecedents": True, "consequents": True, "lift": ":.2f"},
-        labels={"support": "How common (% of orders)", "confidence": "Buy rate (when A is bought, % also buy B)", "lift": "Strength", "rule_type": "Type"},
+        hover_data={"antecedent_name": True, "consequent_name": True, "lift": ":.2f"},
+        labels={"support": "How common (% of orders)", "confidence": "Buy rate (when A is bought, % also buy B)", "lift": "Strength", "rule_type": "Type", "antecedent_name": "If customer buys", "consequent_name": "They also buy"},
         size_max=25,
     )
     fig_sc.update_layout(
@@ -220,7 +223,7 @@ with tab3:
     filtered = rules[
         (rules["rule_type"].isin(rule_type_filter)) &
         (rules["lift"] >= min_lift_filter)
-    ][["antecedents", "consequents", "rule_type", "support", "confidence", "lift"]].sort_values(
+    ][["antecedent_name", "consequent_name", "rule_type", "support", "confidence", "lift"]].sort_values(
         "lift", ascending=False
     ).copy()
 

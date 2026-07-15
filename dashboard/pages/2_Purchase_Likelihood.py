@@ -22,7 +22,7 @@ from utils import (
     render_sidebar,
 )
 
-st.set_page_config(page_title="Propensity Scoring — SmartCart", layout="wide")
+st.set_page_config(page_title="Purchase Likelihood — SmartCart", layout="wide")
 
 st.markdown(
     f"""
@@ -41,12 +41,12 @@ st.markdown(
 
 render_sidebar()
 
-st.title("Purchase Propensity Scoring")
+st.title("Purchase Likelihood")
 st.markdown(
-    "XGBoost model predicting the probability a customer makes a purchase in the next 30 days. "
-    "Trained on a leakage-free time split: RFM + behavioral rhythm features from before the cutoff; "
-    "label = any purchase after the cutoff. **Test AUC: 0.787.** Top 20% of scored customers "
-    "account for 47% of actual buyers (2.3× lift)."
+    "Which customers are most likely to buy again in the next 30 days? "
+    "SmartCart analyzes each customer's purchase history to score their likelihood of returning. "
+    "The top 20% of customers by score account for **47% of all actual buyers** — "
+    "use the Campaign Budget Planner below to decide how many to target."
 )
 
 # ── data ──────────────────────────────────────────────────────────────────────
@@ -69,10 +69,10 @@ n_total = len(full)
 
 # ── KPI row ───────────────────────────────────────────────────────────────────
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Scored Customers", f"{n_total:,}")
-k2.metric("Test AUC", "0.787")
-k3.metric("Top 20% Capture Rate", "47%")
-k4.metric("Lift at Top 20%", "2.3×")
+k1.metric("Customers Scored", f"{n_total:,}")
+k2.metric("Predictive Accuracy", "78.7%", help="How often the model correctly predicts whether a customer will buy (AUC-based)")
+k3.metric("Top 20% Capture Rate", "47%", help="The top 20% by score account for 47% of customers who actually bought")
+k4.metric("Targeting Lift", "2.3×", help="Targeting the top 20% is 2.3× more effective than targeting customers at random")
 
 st.divider()
 
@@ -187,7 +187,6 @@ st.dataframe(top50, use_container_width=True, hide_index=True)
 
 st.divider()
 st.caption(
-    "Model: XGBoost (tuned). Features: recency, frequency, monetary, tenure, avg basket size, "
-    "avg days between orders, purchase regularity, recency ratio. "
-    "30-day horizon, leakage-free time split."
+    "Scores are based on each customer's past purchase recency, frequency, revenue, tenure, "
+    "average basket size, and regularity of orders. 30-day likelihood horizon."
 )

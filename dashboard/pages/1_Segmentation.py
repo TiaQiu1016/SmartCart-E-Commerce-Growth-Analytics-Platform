@@ -50,8 +50,8 @@ render_sidebar()
 
 st.title("Customer Segmentation")
 st.markdown(
-    "RFM-based K-Means clustering (k=4). Segments are assigned by recency, "
-    "frequency, and monetary value — each customer carries a data-backed recommended action."
+    "Customers are grouped into 4 segments based on how recently, how often, and how much they buy. "
+    "Each segment comes with a data-backed recommended action."
 )
 
 # ── data ──────────────────────────────────────────────────────────────────────
