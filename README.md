@@ -2,16 +2,14 @@
 
 **An AI-Powered E-Commerce Growth Analytics Platform for Small & Mid-Sized Online Retailers**
 
-Most small and mid-sized online retailers manage customer analytics with a spreadsheet —
+Most small and mid-sized online retailers manage customer analytics with a spreadsheet,
 or nothing at all. Enterprise platforms (Salesforce, Klaviyo) start at costs that put them
-out of reach for the long tail. SmartCart closes that gap.
+out of reach for the long tail. SmartCart can close that gap.
 
-SmartCart turns a retailer's own transaction data into actionable marketing intelligence —
+SmartCart turns a retailer's own transaction data into actionable marketing intelligence, including
 customer segmentation, lifetime value, churn signals, product recommendations, and a
-plain-language AI growth brief — as a free, open-source alternative to expensive enterprise
+plain-language AI growth brief, as a free, open-source alternative to expensive enterprise
 analytics tools.
-
-BUSA 649 Community Analytics Project (Summer 2026) · McGill Desautels MMA.
 
 ## Modules
 
