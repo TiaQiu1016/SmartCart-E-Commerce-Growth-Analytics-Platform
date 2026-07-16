@@ -2,6 +2,10 @@
 
 **An AI-Powered E-Commerce Growth Analytics Platform for Small & Mid-Sized Online Retailers**
 
+Most small and mid-sized online retailers manage customer analytics with a spreadsheet —
+or nothing at all. Enterprise platforms (Salesforce, Klaviyo) start at costs that put them
+out of reach for the long tail. SmartCart closes that gap.
+
 SmartCart turns a retailer's own transaction data into actionable marketing intelligence —
 customer segmentation, lifetime value, churn signals, product recommendations, and a
 plain-language AI growth brief — as a free, open-source alternative to expensive enterprise
@@ -15,11 +19,11 @@ BUSA 649 Community Analytics Project (Summer 2026) · McGill Desautels MMA.
 | --- | --- | --- |
 | Customer Segmentation | RFM + K-Means | Online Retail II |
 | Customer Lifetime Value | RFM-based CLV (baseline) + BG/NBD + Gamma-Gamma (probabilistic) | Online Retail II |
-| Churn Prediction | Logistic Regression baseline + XGBoost | Online Retail II |
+| Churn Prediction | Logistic Regression baseline + XGBoost (leakage-free time split: features before cutoff, label = no purchase in the following 90 days; AUC ≥ 0.75 on held-out test set) | Online Retail II |
 | Purchase-Propensity Prediction | Logistic Regression + XGBoost | Online Retail II |
 | Product Recommendation | Market-basket analysis (Apriori / association rules) | Online Retail II |
 | Customer Group Comparison | t-tests / chi-square with effect sizes | Online Retail II |
-| AI Insight Brief | LLM-generated executive summary | All module outputs |
+| AI Insight Brief | Reads computed module outputs and writes a plain-language brief from them — does not call an LLM or invent metrics. One data-backed action is enforced per segment. | All module outputs |
 
 Primary dataset: **Online Retail II** (UCI / Kaggle). **Olist** is examined and kept in
 reserve as a backup source.
@@ -133,6 +137,16 @@ SQL scripts in `sql/` can be run standalone, e.g. `sqlite3 data/smartcart.db < s
   currently inactive. The churn **model** (`churn_model.py`) uses a leakage-free time split
   (features before a cutoff, label = no purchase in the following 90 days). The two percentages
   differ because they measure different things.
+
+## Key Technical Design Decisions
+
+**RFM normalization for K-Means** — Recency, frequency, and monetary live on wildly different scales. SmartCart applies `log1p` to each dimension first, then `StandardScaler`, before fitting K-Means. This is pinned in `src/segmentation_clv.py` and must not be changed without re-validating the silhouette scores.
+
+**Churn label leakage** — The biggest modelling risk on this project. Features are computed strictly from the period *before* the cutoff date (2011-09-10). The churn label is whether the customer made zero purchases in the *following* 90-day window. No feature touches the label window. The held-out test set AUC of 0.802 is on data the model never saw. If this time boundary is removed or shifted, the AUC number is invalid. See `src/churn_model.py` and `src/segments_at_cutoff.py`.
+
+**One data-backed action per segment** — The AI brief is required to carry at least one concrete, evidence-backed action for each customer segment. This is the line between analytics and advice. `segments.recommended_action` supplies the action; `src/generate_insight_brief.py` enforces it in the output.
+
+**Observational group comparisons** — The group comparison module uses Welch t-test, Mann-Whitney U, Cohen's d (numeric) and chi-square, Cramér's V (categorical). All results are observational. There is no randomized treatment. Effect sizes are reported to indicate practical magnitude independent of sample size, but they cannot be interpreted as causal.
 
 ## Team
 
