@@ -8,7 +8,9 @@ import streamlit as st
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-DB_PATH = ROOT / "data" / "smartcart.db"
+_deploy_db = ROOT / "data" / "smartcart_deploy.db"
+_local_db  = ROOT / "data" / "smartcart.db"
+DB_PATH = _deploy_db if _deploy_db.exists() else _local_db
 CONFIG_PATH = ROOT / "config.yaml"
 
 BLUE = "#234A70"
@@ -148,21 +150,24 @@ def load_segment_summary() -> pd.DataFrame:
 @st.cache_data
 def load_transactions_summary() -> dict:
     with sqlite3.connect(DB_PATH) as con:
-        row = pd.read_sql(
-            """
-            SELECT
-                COUNT(DISTINCT customer_id) AS n_customers,
-                SUM(revenue) AS total_revenue,
-                COUNT(DISTINCT invoice) AS n_invoices,
-                COUNT(DISTINCT stock_code) AS n_products
-            FROM transactions
-            """,
-            con,
-        ).iloc[0]
-    repeat = pd.read_sql(
-        "SELECT COUNT(*) AS n FROM segments WHERE frequency > 1",
-        sqlite3.connect(DB_PATH),
-    ).iloc[0, 0]
+        tables = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        if "transactions_summary" in tables:
+            row = pd.read_sql("SELECT * FROM transactions_summary", con).iloc[0]
+        else:
+            row = pd.read_sql(
+                """
+                SELECT
+                    COUNT(DISTINCT customer_id) AS n_customers,
+                    SUM(revenue)               AS total_revenue,
+                    COUNT(DISTINCT invoice)    AS n_invoices,
+                    COUNT(DISTINCT stock_code) AS n_products
+                FROM transactions
+                """,
+                con,
+            ).iloc[0]
+        repeat = pd.read_sql(
+            "SELECT COUNT(*) AS n FROM segments WHERE frequency > 1", con
+        ).iloc[0, 0]
     return {
         "n_customers": int(row["n_customers"]),
         "total_revenue": float(row["total_revenue"]),

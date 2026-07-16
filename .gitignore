@@ -6,6 +6,8 @@ data/*.db-journal
 data/*.sqlite
 data/insight_inputs.json
 !data/.gitkeep
+!data/smartcart_deploy.db
+!data/insight_inputs.json
 
 # Python
 __pycache__/

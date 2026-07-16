@@ -69,6 +69,24 @@ def write_transactions(df: pd.DataFrame, db_path: Path) -> None:
         con.commit()
 
 
+def write_transactions_summary(db_path: Path) -> None:
+    with sqlite3.connect(db_path) as con:
+        con.execute("DROP TABLE IF EXISTS transactions_summary")
+        con.execute("""
+            CREATE TABLE transactions_summary AS
+            SELECT
+                COUNT(DISTINCT customer_id) AS n_customers,
+                SUM(revenue)               AS total_revenue,
+                COUNT(DISTINCT invoice)    AS n_invoices,
+                COUNT(DISTINCT stock_code) AS n_products,
+                MIN(invoice_date)          AS date_from,
+                MAX(invoice_date)          AS date_to
+            FROM transactions
+        """)
+        con.commit()
+    print("transactions_summary table written.")
+
+
 def build_rfm(db_path: Path, rfm_sql: Path) -> None:
     script = rfm_sql.read_text()
     with sqlite3.connect(db_path) as con:
@@ -116,6 +134,7 @@ def main(config_path: Path = CONFIG_PATH) -> None:
         )
     df = load_and_clean(raw_csv, cfg)
     write_transactions(df, DB_PATH)
+    write_transactions_summary(DB_PATH)
     build_rfm(DB_PATH, RFM_SQL)
     verify(DB_PATH)
     print(f"\nDatabase written to {DB_PATH}")
