@@ -19,6 +19,8 @@ from utils import (
     load_clv,
     load_group_comparison,
     load_segment_summary,
+    load_segment_churn_v2_results,
+    load_segment_churn_v2_summary,
     load_segments,
     render_sidebar,
 )
@@ -63,9 +65,15 @@ comp = load_group_comparison()
 summary = load_segment_summary()
 segments = load_segments()
 clv = load_clv()
+try:
+    churn_v2_summary = load_segment_churn_v2_summary()
+    churn_v2_results = load_segment_churn_v2_results()
+except Exception:
+    churn_v2_summary = None
+    churn_v2_results = None
 
 # ── tabs ──────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["UK vs. Non-UK", "Champions vs. Hibernating", "Segment Profiles"])
+tab1, tab2, tab3, tab4 = st.tabs(["UK vs. Non-UK", "Champions vs. Hibernating", "Segment Profiles", "Future Churn Validation"])
 
 with tab1:
     st.subheader("UK vs. Non-UK Customers")
@@ -275,6 +283,89 @@ with tab3:
     fig_seg.update_traces(textposition="outside")
     fig_seg.update_layout(**PLOTLY_LAYOUT, xaxis_title=None)
     st.plotly_chart(fig_seg, use_container_width=True)
+
+
+with tab4:
+    st.subheader("Future Churn Validation by Historical Segment")
+    st.markdown(
+        "This view uses `segments_at_cutoff`: customers are segmented using only "
+        "transactions on or before the churn feature cutoff, then compared against "
+        "actual churn in the following 90-day label window. This makes the segment "
+        "comparison leakage-aware and avoids using future behavior to define the groups."
+    )
+
+    if churn_v2_summary is None or churn_v2_summary.empty:
+        st.info("Cutoff-based churn validation is not available. Run `python src/segments_at_cutoff.py` after the churn model.")
+    else:
+        heldout = churn_v2_summary[churn_v2_summary["validation_scope"] == "heldout_test"].copy()
+        if heldout.empty:
+            heldout = churn_v2_summary.copy()
+
+        cutoff = heldout["feature_cutoff_date"].iloc[0]
+        label_window = int(heldout["label_window_days"].iloc[0])
+        st.caption(
+            f"Validation scope: held-out test set where available. Feature cutoff: {cutoff}. "
+            f"Future churn window: {label_window} days."
+        )
+
+        k1, k2, k3 = st.columns(3)
+        highest = heldout.sort_values("actual_future_churn_rate", ascending=False).iloc[0]
+        lowest = heldout.sort_values("actual_future_churn_rate", ascending=True).iloc[0]
+        k1.metric("Highest Future Churn", highest["segment"], f"{highest['actual_future_churn_rate']:.1%}")
+        k2.metric("Lowest Future Churn", lowest["segment"], f"{lowest['actual_future_churn_rate']:.1%}")
+        k3.metric("Evaluated Customers", f"{int(heldout['evaluated_customers'].sum()):,}")
+
+        chart_df = heldout.sort_values("actual_future_churn_rate", ascending=False).copy()
+        chart_df["Actual future churn"] = chart_df["actual_future_churn_rate"]
+        chart_df["Predicted churn"] = chart_df["avg_predicted_churn_probability"]
+        long_df = chart_df.melt(
+            id_vars=["segment"],
+            value_vars=["Actual future churn", "Predicted churn"],
+            var_name="Measure",
+            value_name="Rate",
+        )
+        fig_churn = px.bar(
+            long_df,
+            x="segment",
+            y="Rate",
+            color="Measure",
+            barmode="group",
+            text=long_df["Rate"].map("{:.0%}".format),
+            color_discrete_sequence=[ACCENT, BLUE],
+        )
+        fig_churn.update_traces(textposition="outside")
+        fig_churn.update_layout(**PLOTLY_LAYOUT, xaxis_title=None, yaxis_tickformat=".0%")
+        st.plotly_chart(fig_churn, use_container_width=True)
+
+        display = heldout[[
+            "segment",
+            "evaluated_customers",
+            "actual_future_churn_rate",
+            "avg_predicted_churn_probability",
+        ]].rename(columns={
+            "segment": "Segment",
+            "evaluated_customers": "Held-out Customers",
+            "actual_future_churn_rate": "Actual Future Churn",
+            "avg_predicted_churn_probability": "Avg Predicted Churn",
+        })
+        display["Actual Future Churn"] = display["Actual Future Churn"].map("{:.1%}".format)
+        display["Avg Predicted Churn"] = display["Avg Predicted Churn"].map("{:.1%}".format)
+        st.dataframe(display, use_container_width=True, hide_index=True)
+
+        if churn_v2_results is not None and not churn_v2_results.empty:
+            st.markdown("#### Validation Tests")
+            for _, row in churn_v2_results.iterrows():
+                st.markdown(
+                    f"**{row['test_type']}** on `{row['metric']}`: "
+                    f"p-value {row['p_value']:.3g}, "
+                    f"{row['effect_size_name']} {row['effect_size']:.3f}."
+                )
+
+        st.success(
+            "Interpretation: historical segment labels are meaningfully related to future churn "
+            "on the held-out customers. This supports using segments as an action layer for churn risk, "
+            "while keeping the churn model itself as the predictive source of truth."
+        )
 
 st.divider()
 st.caption(

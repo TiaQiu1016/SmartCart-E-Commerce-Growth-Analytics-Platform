@@ -118,6 +118,25 @@ def load_group_comparison() -> pd.DataFrame:
 
 
 @st.cache_data
+def load_segment_churn_v2_summary() -> pd.DataFrame:
+    with sqlite3.connect(DB_PATH) as con:
+        return pd.read_sql(
+            """
+            SELECT *
+            FROM segment_churn_v2_summary
+            ORDER BY validation_scope, actual_future_churn_rate DESC
+            """,
+            con,
+        )
+
+
+@st.cache_data
+def load_segment_churn_v2_results() -> pd.DataFrame:
+    with sqlite3.connect(DB_PATH) as con:
+        return pd.read_sql("SELECT * FROM segment_churn_v2_results", con)
+
+
+@st.cache_data
 def load_clv_bgnbd() -> pd.DataFrame:
     with sqlite3.connect(DB_PATH) as con:
         return pd.read_sql("SELECT * FROM clv_bgnbd", con)
