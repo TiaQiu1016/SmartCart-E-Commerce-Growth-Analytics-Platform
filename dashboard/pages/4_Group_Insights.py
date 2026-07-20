@@ -286,16 +286,17 @@ with tab3:
 
 
 with tab4:
-    st.subheader("Future Churn Validation by Historical Segment")
+    st.subheader("Which Segments Are Most Likely to Go Quiet?")
     st.markdown(
-        "This view uses `segments_at_cutoff`: customers are segmented using only "
-        "transactions on or before the churn feature cutoff, then compared against "
-        "actual churn in the following 90-day label window. This makes the segment "
-        "comparison leakage-aware and avoids using future behavior to define the groups."
+        "This tab checks whether the customer segment someone belongs to — "
+        "Champions, Loyal, At Risk, or Hibernating — predicts whether they actually "
+        "stopped buying over the following 90 days. "
+        "It uses only purchase history up to a fixed reference date, then checks "
+        "what each group did afterward."
     )
 
     if churn_v2_summary is None or churn_v2_summary.empty:
-        st.info("Cutoff-based churn validation is not available. Run `python src/segments_at_cutoff.py` after the churn model.")
+        st.info("Churn-by-segment data is not yet available.")
     else:
         heldout = churn_v2_summary[churn_v2_summary["validation_scope"] == "heldout_test"].copy()
         if heldout.empty:
@@ -304,8 +305,8 @@ with tab4:
         cutoff = heldout["feature_cutoff_date"].iloc[0]
         label_window = int(heldout["label_window_days"].iloc[0])
         st.caption(
-            f"Validation scope: held-out test set where available. Feature cutoff: {cutoff}. "
-            f"Future churn window: {label_window} days."
+            f"Based on purchase history through {cutoff}. "
+            f"\"Went quiet\" = no purchase in the following {label_window} days."
         )
 
         k1, k2, k3 = st.columns(3)
@@ -353,18 +354,19 @@ with tab4:
         st.dataframe(display, use_container_width=True, hide_index=True)
 
         if churn_v2_results is not None and not churn_v2_results.empty:
-            st.markdown("#### Validation Tests")
+            st.markdown("#### Do the Segments Separate Churn Risk?")
             for _, row in churn_v2_results.iterrows():
+                sig = row["p_value"] < 0.05
+                label = "Notable difference" if sig else "Similar across segments"
                 st.markdown(
-                    f"**{row['test_type']}** on `{row['metric']}`: "
-                    f"p-value {row['p_value']:.3g}, "
-                    f"{row['effect_size_name']} {row['effect_size']:.3f}."
+                    f"**{row['metric']}**: {label} "
+                    f"(difference size: {row['effect_size']:.2f})"
                 )
 
         st.success(
-            "Interpretation: historical segment labels are meaningfully related to future churn "
-            "on the held-out customers. This supports using segments as an action layer for churn risk, "
-            "while keeping the churn model itself as the predictive source of truth."
+            "Takeaway: a customer's segment is a reliable signal for who will go quiet — "
+            "so targeting by segment is a meaningful complement to the individual churn scores "
+            "on the Churn Risk page."
         )
 
 st.divider()
