@@ -21,12 +21,31 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from openai import OpenAI
+
+
+# Causal trigger phrases that suggest the LLM has drifted beyond observational framing.
+_CAUSAL_PHRASES = [
+    "causes",
+    "caused by",
+    "leads to",
+    "led to",
+    "resulted in",
+    "is responsible for",
+    "proves that",
+    "treatment effect",
+    "directly impacts",
+    "directly affects",
+    "causal relationship",
+    "prove causation",
+]
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -123,10 +142,58 @@ def call_openai(payload: dict[str, Any], model: str) -> str:
     return response.output_text.strip()
 
 
+def _extract_numbers(text: str) -> list[float]:
+    """Extract all numeric values from brief text, including percentage conversions."""
+    results = []
+    for match in re.finditer(r'\b([\d,]+(?:\.\d+)?)\s*(%?)', text):
+        raw = match.group(1).replace(',', '')
+        try:
+            val = float(raw)
+        except ValueError:
+            continue
+        if match.group(2) == '%':
+            results.append(val)
+            results.append(round(val / 100, 6))
+        else:
+            results.append(val)
+    return results
+
+
+def _flatten_numbers(obj: Any, _depth: int = 0) -> list[float]:
+    """Recursively collect all finite numeric values from a JSON-like object."""
+    if _depth > 12:
+        return []
+    if isinstance(obj, bool):
+        return []
+    if isinstance(obj, (int, float)):
+        v = float(obj)
+        if math.isfinite(v):
+            return [v, round(v * 100, 6)]
+    if isinstance(obj, dict):
+        out: list[float] = []
+        for val in obj.values():
+            out.extend(_flatten_numbers(val, _depth + 1))
+        return out
+    if isinstance(obj, list):
+        out = []
+        for item in obj:
+            out.extend(_flatten_numbers(item, _depth + 1))
+        return out
+    return []
+
+
+def _matches_json(value: float, json_values: list[float], tol: float = 0.015) -> bool:
+    """True if value is within tol (relative) of any JSON numeric value."""
+    if value == 0.0:
+        return 0.0 in json_values
+    return any(abs(value - j) / max(abs(j), 1e-9) <= tol for j in json_values)
+
+
 def validate_brief(text: str, payload: dict[str, Any]) -> tuple[list[str], list[str]]:
     passed: list[str] = []
     warnings: list[str] = []
 
+    # --- Existing checks ---
     segments = payload.get("segments", [])
     for segment in segments:
         name = str(segment.get("segment", "")).strip()
@@ -140,11 +207,6 @@ def validate_brief(text: str, payload: dict[str, Any]) -> tuple[list[str], list[
         else:
             warnings.append(f"Exact recommended_action not found for {name}")
 
-    if "observational" in text.lower():
-        passed.append("Observational limitation is stated")
-    else:
-        warnings.append("Observational limitation may be missing")
-
     if "customer_id" not in text:
         passed.append("No customer_id field exposed in brief text")
     else:
@@ -154,6 +216,63 @@ def validate_brief(text: str, payload: dict[str, Any]) -> tuple[list[str], list[
         passed.append("Traceability / no-invention guardrail is stated")
     else:
         warnings.append("Traceability / no-invention guardrail may be missing")
+
+    # --- NEW: number traceability check ---
+    json_values = _flatten_numbers(payload)
+    unmatched = [
+        n for n in _extract_numbers(text)
+        if n >= 10 and not _matches_json(n, json_values)
+    ]
+    if not unmatched:
+        passed.append("All cited numbers traced to JSON values within 1.5% tolerance")
+    else:
+        for n in unmatched[:5]:
+            warnings.append(
+                f"Number {n} in brief not matched to JSON — verify manually"
+            )
+        if len(unmatched) > 5:
+            warnings.append(
+                f"...and {len(unmatched) - 5} more unmatched numbers — review the full brief"
+            )
+
+    # --- NEW: enhanced causal language check ---
+    text_lower = text.lower()
+
+    # "observational" must appear in the Limitations or Scope section, not just anywhere
+    anchor = ""
+    for heading in ("## Limitations", "## Scope"):
+        idx = text.find(heading)
+        if idx != -1:
+            anchor += text[idx:]
+    if "observational" in anchor.lower():
+        passed.append("'Observational' limitation confirmed in Limitations or Scope section")
+    else:
+        warnings.append(
+            "'Observational' not found in Limitations or Scope section — add explicit caveat"
+        )
+
+    # Scan for strong causal trigger phrases not immediately qualified
+    causal_hits: list[str] = []
+    for phrase in _CAUSAL_PHRASES:
+        start = 0
+        while True:
+            idx = text_lower.find(phrase, start)
+            if idx == -1:
+                break
+            context = text_lower[max(0, idx - 40): idx + len(phrase) + 40]
+            negated = any(
+                q in context
+                for q in ("does not", "not causal", "observational", "does not imply", "no causal")
+            )
+            if not negated:
+                causal_hits.append(phrase)
+            start = idx + 1
+
+    if not causal_hits:
+        passed.append("No unqualified causal language detected")
+    else:
+        for phrase in dict.fromkeys(causal_hits):
+            warnings.append(f"Possible causal language: '{phrase}' — review in context")
 
     return passed, warnings
 
