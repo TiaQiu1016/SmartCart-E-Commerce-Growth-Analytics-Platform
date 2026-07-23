@@ -169,6 +169,14 @@ with tab3:
 
     st.divider()
 
+    st.info(
+        "**Approval must be done locally and committed to git.** "
+        "Approvals made on Streamlit Cloud are written to the running container only "
+        "and are lost on the next deploy. After approving, commit "
+        "`reports/ai_insight_brief_llm_approved.json` to the repository so the "
+        "audit trail is preserved."
+    )
+
     if not llm_brief_text:
         st.info(
             "No LLM brief found. Run `python src/generate_insight_brief_llm.py` "
