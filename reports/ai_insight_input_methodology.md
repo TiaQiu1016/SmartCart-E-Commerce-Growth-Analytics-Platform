@@ -107,8 +107,11 @@ probabilities, cutoff date, label window, and held-out test flags; and
 `segment_churn_v2_summary` supplies leakage-free segment-level future churn
 validation based on `segments_at_cutoff`.
 
-The brief remains evidence-based rather than generative in this submitted
-version: `src/generate_insight_brief.py` converts computed JSON fields into a
-reviewed candidate brief and does not call an external LLM. A future deployment
-could add an LLM layer, but it must preserve the same structured input contract
-and guardrails.
+The submitted pipeline now has two generation paths. The deterministic fallback
+(`src/generate_insight_brief.py`) converts computed JSON fields into a reviewed
+candidate brief without calling an external model. The optional LLM path
+(`src/generate_insight_brief_llm.py`) sends the same JSON contract and guardrails
+to the OpenAI API, writes `reports/ai_insight_brief_llm.md`, and produces an
+automated validation report checking segment coverage, exact recommended actions,
+traceability wording, and customer-ID exposure. Human review remains required
+before using the LLM output in the final dashboard, report, or presentation.

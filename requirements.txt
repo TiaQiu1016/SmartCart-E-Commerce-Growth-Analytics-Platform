@@ -12,3 +12,4 @@ plotly
 streamlit
 jupyter
 pyyaml
+openai>=1.40.0

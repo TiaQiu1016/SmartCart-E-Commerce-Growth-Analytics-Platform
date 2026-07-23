@@ -102,7 +102,7 @@ The AI insight-brief component converts computed analytics outputs into a plain-
 
 ### Method
 
-`src/prepare_insight_inputs.py` reads verified SQLite outputs and creates a structured JSON contract. `src/generate_insight_brief.py` converts that JSON into a reviewed Markdown candidate brief. In the submitted version, the generator is deterministic and does not call an external LLM. A future LLM layer could be added only if it preserves the same structured inputs and guardrails.
+`src/prepare_insight_inputs.py` reads verified SQLite outputs and creates a structured JSON contract. SmartCart then supports two generation paths. The deterministic fallback, `src/generate_insight_brief.py`, converts that JSON into a reviewed Markdown candidate brief without calling an external model. The optional LLM path, `src/generate_insight_brief_llm.py`, sends the same structured evidence and guardrails to the OpenAI API and writes an LLM-generated candidate brief plus a validation report. This keeps the AI feature aligned with the project requirement that recommendations remain traceable to computed model outputs.
 
 The brief includes segment actions, CLV and propensity evidence, group comparison signals, predictive churn signals, and product recommendation signals. Each customer segment must have at least one actionable recommendation tied to computed metrics.
 
