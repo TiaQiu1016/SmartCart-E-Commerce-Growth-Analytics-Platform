@@ -9,7 +9,7 @@ the later natural-language generation step.
 
 Default local output: `data/insight_inputs.json`.
 
-`src/generate_insight_brief.py` creates a deterministic Markdown brief draft
+`src/generate_insight_brief.py` creates a deterministic Markdown brief candidate
 from that JSON. It is a reviewable bridge toward the future AI-generated brief:
 it applies the same guardrails, cites only computed fields, and does not call
 an external model.
@@ -97,11 +97,18 @@ Missing `clv_bgnbd`, `propensity_scores`, product recommendations, group
 comparisons, or predictive churn outputs are reported explicitly. A `null`
 metric must never be interpreted as a zero value.
 
-## Current limitation
+## Current status
 
-The current local database may not contain the enhanced `clv_bgnbd` table until
-`src/clv_bgnbd.py` is run after rebuilding `data/smartcart.db`. The current
-churn module does not write customer-level actual labels and predicted
-probabilities to SQLite. Until that output is available with its cutoff and
-label window documented, predictive churn comparisons remain explicitly
-unavailable in the structured input.
+The final-cycle pipeline now supports the enhanced AI brief inputs. When the
+analysis scripts are run in the documented order, `clv_bgnbd` supplies
+BG/NBD CLV, `p_alive`, expected active purchase weeks, and repeat-history flags;
+`churn_scores` supplies customer-level actual churn labels, predicted churn
+probabilities, cutoff date, label window, and held-out test flags; and
+`segment_churn_v2_summary` supplies leakage-free segment-level future churn
+validation based on `segments_at_cutoff`.
+
+The brief remains evidence-based rather than generative in this submitted
+version: `src/generate_insight_brief.py` converts computed JSON fields into a
+reviewed candidate brief and does not call an external LLM. A future deployment
+could add an LLM layer, but it must preserve the same structured input contract
+and guardrails.

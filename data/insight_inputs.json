@@ -1,7 +1,7 @@
 {
   "metadata": {
     "schema_version": "1.1",
-    "generated_at_utc": "2026-07-13T17:50:32.602180+00:00",
+    "generated_at_utc": "2026-07-23T09:24:43.699637+00:00",
     "source": "Computed SmartCart SQLite outputs only"
   },
   "segments": [
@@ -16,7 +16,7 @@
       "avg_p_alive": 0.9805,
       "avg_pred_active_purchase_weeks_12m": 8.1883,
       "insufficient_repeat_history_share": 0.0018,
-      "avg_propensity_score": 0.7756,
+      "avg_propensity_score": 0.7745,
       "recommended_action": "Protect and grow with VIP retention, early access, and referral offers."
     },
     {
@@ -30,7 +30,7 @@
       "avg_p_alive": 0.9665,
       "avg_pred_active_purchase_weeks_12m": 3.2216,
       "insufficient_repeat_history_share": 0.1916,
-      "avg_propensity_score": 0.4912,
+      "avg_propensity_score": 0.4929,
       "recommended_action": "Trigger a second-purchase campaign while recency is still strong."
     },
     {
@@ -44,7 +44,7 @@
       "avg_p_alive": 0.8397,
       "avg_pred_active_purchase_weeks_12m": 2.2678,
       "insufficient_repeat_history_share": 0.0193,
-      "avg_propensity_score": 0.4255,
+      "avg_propensity_score": 0.4171,
       "recommended_action": "Prioritize win-back messaging because past value is high but recent activity is weak."
     },
     {
@@ -58,7 +58,7 @@
       "avg_p_alive": 0.9164,
       "avg_pred_active_purchase_weeks_12m": 0.7588,
       "insufficient_repeat_history_share": 0.6957,
-      "avg_propensity_score": 0.2085,
+      "avg_propensity_score": 0.2052,
       "recommended_action": "Use low-cost reactivation only; avoid heavy discount spend unless basket value improves."
     }
   ],
@@ -67,7 +67,7 @@
       "segment": "Hibernating",
       "evaluated_customers": 420,
       "actual_future_churn_rate": 0.8119,
-      "avg_predicted_churn_probability": 0.7965,
+      "avg_predicted_churn_probability": 0.7963,
       "validation_scope": "heldout_test",
       "feature_cutoff_date": "2011-09-10",
       "label_window_days": 90
@@ -76,7 +76,7 @@
       "segment": "At Risk High-Value",
       "evaluated_customers": 329,
       "actual_future_churn_rate": 0.541,
-      "avg_predicted_churn_probability": 0.5252,
+      "avg_predicted_churn_probability": 0.531,
       "validation_scope": "heldout_test",
       "feature_cutoff_date": "2011-09-10",
       "label_window_days": 90
@@ -85,7 +85,7 @@
       "segment": "Recent / Promising",
       "evaluated_customers": 128,
       "actual_future_churn_rate": 0.4375,
-      "avg_predicted_churn_probability": 0.4499,
+      "avg_predicted_churn_probability": 0.447,
       "validation_scope": "heldout_test",
       "feature_cutoff_date": "2011-09-10",
       "label_window_days": 90
@@ -94,7 +94,7 @@
       "segment": "Champions",
       "evaluated_customers": 180,
       "actual_future_churn_rate": 0.1278,
-      "avg_predicted_churn_probability": 0.1589,
+      "avg_predicted_churn_probability": 0.1684,
       "validation_scope": "heldout_test",
       "feature_cutoff_date": "2011-09-10",
       "label_window_days": 90
@@ -374,16 +374,6 @@
   ],
   "top_product_recommendations": [
     {
-      "stock_code": "22699",
-      "description": "ROSES REGENCY TEACUP AND SAUCER ",
-      "recommended_stock_code": "22697",
-      "recommended_description": "GREEN REGENCY TEACUP AND SAUCER",
-      "rule_type": "Complete the Set",
-      "support": 0.0222,
-      "confidence": 0.7073,
-      "lift": 25.3714
-    },
-    {
       "stock_code": "22697",
       "description": "GREEN REGENCY TEACUP AND SAUCER",
       "recommended_stock_code": "22699",
@@ -391,6 +381,16 @@
       "rule_type": "Complete the Set",
       "support": 0.0222,
       "confidence": 0.7979,
+      "lift": 25.3714
+    },
+    {
+      "stock_code": "22699",
+      "description": "ROSES REGENCY TEACUP AND SAUCER ",
+      "recommended_stock_code": "22697",
+      "recommended_description": "GREEN REGENCY TEACUP AND SAUCER",
+      "rule_type": "Complete the Set",
+      "support": 0.0222,
+      "confidence": 0.7073,
       "lift": 25.3714
     },
     {
@@ -454,16 +454,6 @@
       "lift": 13.1691
     },
     {
-      "stock_code": "82482",
-      "description": "WOODEN PICTURE FRAME WHITE FINISH",
-      "recommended_stock_code": "82494L",
-      "recommended_description": "WOODEN FRAME ANTIQUE WHITE ",
-      "rule_type": "Complete the Set",
-      "support": 0.0293,
-      "confidence": 0.6015,
-      "lift": 11.5249
-    },
-    {
       "stock_code": "82494L",
       "description": "WOODEN FRAME ANTIQUE WHITE ",
       "recommended_stock_code": "82482",
@@ -471,6 +461,16 @@
       "rule_type": "Complete the Set",
       "support": 0.0293,
       "confidence": 0.5613,
+      "lift": 11.5249
+    },
+    {
+      "stock_code": "82482",
+      "description": "WOODEN PICTURE FRAME WHITE FINISH",
+      "recommended_stock_code": "82494L",
+      "recommended_description": "WOODEN FRAME ANTIQUE WHITE ",
+      "rule_type": "Complete the Set",
+      "support": 0.0293,
+      "confidence": 0.6015,
       "lift": 11.5249
     }
   ],

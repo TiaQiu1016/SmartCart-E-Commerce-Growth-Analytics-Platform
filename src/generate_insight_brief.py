@@ -2,8 +2,8 @@
 Generate a deterministic SmartCart insight brief from computed JSON inputs.
 
 This script does not call an LLM. It converts `data/insight_inputs.json` into a
-plain-language Markdown draft so the team can review the evidence, wording, and
-guardrails before adding any future AI generation step.
+plain-language Markdown candidate brief so the team can review the evidence, wording,
+and guardrails before submission or any future AI generation step.
 
 Usage:
     python src/generate_insight_brief.py
@@ -158,16 +158,16 @@ def build_brief(payload: dict[str, Any]) -> str:
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     lines = [
-        "# SmartCart AI Insight Brief Draft",
+        "# SmartCart AI Insight Brief - Reviewed Candidate",
         "",
         f"Generated: {generated_at}",
         "",
         "## Scope and Guardrails",
         "",
-        "This draft is generated from computed SmartCart outputs only. It does not "
-        "invent metrics, recompute models, or make causal claims. A team member "
-        "should verify the cited numbers before using the wording in the dashboard "
-        "or final report.",
+        "This brief is generated from computed SmartCart outputs only. It does not "
+        "invent metrics, recompute models, or make causal claims. Each segment action "
+        "is tied to model output and should remain traceable in the dashboard, final "
+        "report, and presentation.",
         "",
         "## Executive Summary",
         "",
@@ -276,7 +276,7 @@ def main() -> None:
         display_path = args.output.resolve().relative_to(ROOT)
     except ValueError:
         display_path = args.output.name
-    print(f"Insight brief draft written to {display_path.as_posix()}")
+    print(f"Insight brief written to {display_path.as_posix()}")
 
 
 if __name__ == "__main__":
