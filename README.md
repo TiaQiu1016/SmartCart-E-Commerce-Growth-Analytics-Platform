@@ -21,7 +21,7 @@ analytics tools.
 | Purchase-Propensity Prediction | Logistic Regression + XGBoost | Online Retail II |
 | Product Recommendation | Market-basket analysis (Apriori / association rules) | Online Retail II |
 | Customer Group Comparison | t-tests / chi-square with effect sizes | Online Retail II |
-| AI Insight Brief | Reads computed module outputs and writes a plain-language brief from them — does not call an LLM or invent metrics. One data-backed action is enforced per segment. | All module outputs |
+| AI Insight Brief | Reads computed module outputs and writes a plain-language brief through a deterministic fallback and an optional OpenAI API LLM path. Every cited number must trace back to model output, and one data-backed action is enforced per segment. | All module outputs |
 
 Primary dataset: **Online Retail II** (UCI / Kaggle). **Olist** is examined and kept in
 reserve as a backup source.
@@ -30,8 +30,8 @@ reserve as a backup source.
 
 Python (pandas, numpy, scikit-learn, XGBoost, mlxtend, lifetimes),
 SQLite for the SQL data layer and aggregation, Plotly + Streamlit for the dashboard,
-a deterministic evidence-based insight-brief generator with optional future LLM extension,
-and GitHub for version control.
+a deterministic evidence-based insight-brief generator with an optional OpenAI API LLM
+candidate brief, and GitHub for version control.
 
 ## Repository Structure
 
@@ -155,7 +155,7 @@ SQL scripts in `sql/` can be run standalone, e.g. `sqlite3 data/smartcart.db < s
 
 **Churn label leakage** — The biggest modelling risk on this project. Features are computed strictly from the period *before* the cutoff date (2011-09-10). The churn label is whether the customer made zero purchases in the *following* 90-day window. No feature touches the label window. The held-out test set AUC of 0.802 is on data the model never saw. If this time boundary is removed or shifted, the AUC number is invalid. See `src/churn_model.py` and `src/segments_at_cutoff.py`.
 
-**One data-backed action per segment** — The AI brief is required to carry at least one concrete, evidence-backed action for each customer segment. This is the line between analytics and advice. `segments.recommended_action` supplies the action; `src/generate_insight_brief.py` enforces it in the output.
+**One data-backed action per segment** — The AI brief is required to carry at least one concrete, evidence-backed action for each customer segment. This means every segment must include a specific marketing or merchandising recommendation, and the reason for that recommendation must point to computed outputs such as segment profile metrics, CLV, churn, propensity, or product-recommendation evidence. This is the line between analytics and advice. `segments.recommended_action` supplies the segment action; the deterministic and LLM brief paths preserve those actions and validate that cited numbers remain traceable to `data/insight_inputs.json`.
 
 **Observational group comparisons** — The group comparison module uses Welch t-test, Mann-Whitney U, Cohen's d (numeric) and chi-square, Cramér's V (categorical). All results are observational. There is no randomized treatment. Effect sizes are reported to indicate practical magnitude independent of sample size, but they cannot be interpreted as causal.
 
