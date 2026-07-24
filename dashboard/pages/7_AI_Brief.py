@@ -4,6 +4,7 @@ AI Insight Brief page: reviewable business narrative from computed outputs.
 
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -14,7 +15,17 @@ from utils import ACCENT, BLUE, render_sidebar
 
 ROOT = Path(__file__).resolve().parents[2]
 BRIEF_PATH = ROOT / "reports" / "ai_insight_brief_draft.md"
+LLM_BRIEF_PATH = ROOT / "reports" / "ai_insight_brief_llm.md"
+APPROVED_PATH = ROOT / "reports" / "ai_insight_brief_llm_approved.json"
 INPUT_PATH = ROOT / "data" / "insight_inputs.json"
+
+_REVIEW_CHECKLIST = [
+    "Every number in the brief matches `data/insight_inputs.json`",
+    "No observational result is described as a causal effect",
+    "Every segment has one data-backed recommended action",
+    "API-generated wording is appropriate for final submission",
+    "No customer-level identifiers are exposed",
+]
 
 st.set_page_config(page_title="AI Insight Brief - SmartCart", layout="wide")
 
@@ -56,7 +67,21 @@ def load_json(path: Path) -> dict:
 
 
 payload = load_json(INPUT_PATH)
-brief_text = BRIEF_PATH.read_text(encoding="utf-8") if BRIEF_PATH.exists() else ""
+approval = load_json(APPROVED_PATH)
+llm_brief_text = LLM_BRIEF_PATH.read_text(encoding="utf-8") if LLM_BRIEF_PATH.exists() else ""
+deterministic_text = BRIEF_PATH.read_text(encoding="utf-8") if BRIEF_PATH.exists() else ""
+llm_approved = bool(approval.get("approved"))
+
+# Determine which brief to surface
+if llm_brief_text and llm_approved:
+    active_brief = llm_brief_text
+    brief_source = "llm"
+elif deterministic_text:
+    active_brief = deterministic_text
+    brief_source = "deterministic"
+else:
+    active_brief = ""
+    brief_source = "none"
 
 if not payload:
     st.warning(
@@ -64,12 +89,19 @@ if not payload:
         "`python src/prepare_insight_inputs.py` before reviewing the brief."
     )
 
-if not brief_text:
+if brief_source == "none":
     st.warning(
-        "`reports/ai_insight_brief_draft.md` is not available. Run "
-        "`python src/generate_insight_brief.py` before opening this page."
+        "No brief is available. Run `python src/generate_insight_brief.py` first."
     )
     st.stop()
+
+# Show a banner when the LLM brief exists but hasn't been reviewed yet
+if llm_brief_text and not llm_approved:
+    st.warning(
+        "An LLM-generated brief exists but has not been reviewed by a team member. "
+        "The deterministic draft is shown below. Open the **Guardrails** tab to review "
+        "and approve the LLM brief."
+    )
 
 metadata = payload.get("metadata", {})
 segments = payload.get("segments", [])
@@ -82,7 +114,7 @@ k1, k2, k3, k4 = st.columns(4)
 k1.metric("Segments Analyzed", f"{len(segments)}")
 k2.metric("Group Comparisons", f"{len(groups)}")
 k3.metric("Product Suggestions", f"{len(recommendations)}")
-k4.metric("Churn Segments", f"{len(payload.get('predictive_churn_by_segment', []))}")
+k4.metric("Churn Segments", f"{len(churn)}")
 
 st.caption(
     "Source: computed SQLite outputs only. The brief should be reviewed by the "
@@ -94,35 +126,26 @@ st.divider()
 tab1, tab2, tab3 = st.tabs(["Brief Draft", "Input Status", "Guardrails"])
 
 with tab1:
-    st.subheader("Generated Brief Draft")
+    if brief_source == "llm":
+        st.success(
+            f"LLM brief — reviewed and approved by **{approval.get('approved_by', 'team member')}** "
+            f"on {approval.get('approved_at', '')[:10]}."
+        )
+    else:
+        st.info("Showing deterministic draft. Approve the LLM brief in the Guardrails tab to upgrade.")
+
     st.markdown('<div class="brief-box">', unsafe_allow_html=True)
-    st.markdown(brief_text)
+    st.markdown(active_brief)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab2:
     st.subheader("Structured Input Status")
 
     status_rows = [
-        {
-            "Input": "Segment summaries",
-            "Status": "Available" if segments else "Missing",
-            "Records": len(segments),
-        },
-        {
-            "Input": "Predictive churn by segment",
-            "Status": "Available" if churn else "Missing",
-            "Records": len(churn),
-        },
-        {
-            "Input": "Group comparisons",
-            "Status": "Available" if groups else "Missing",
-            "Records": len(groups),
-        },
-        {
-            "Input": "Product recommendations",
-            "Status": "Available" if recommendations else "Missing",
-            "Records": len(recommendations),
-        },
+        {"Input": "Segment summaries", "Status": "Available" if segments else "Missing", "Records": len(segments)},
+        {"Input": "Predictive churn by segment", "Status": "Available" if churn else "Missing", "Records": len(churn)},
+        {"Input": "Group comparisons", "Status": "Available" if groups else "Missing", "Records": len(groups)},
+        {"Input": "Product recommendations", "Status": "Available" if recommendations else "Missing", "Records": len(recommendations)},
     ]
     st.dataframe(status_rows, use_container_width=True, hide_index=True)
 
@@ -144,17 +167,55 @@ with tab3:
     else:
         st.info("No machine-readable guardrails found in the structured input.")
 
-    st.markdown(
-        """
-        **Before sharing with stakeholders**
+    st.divider()
 
-        - Verify every number in the brief against the underlying analysis outputs.
-        - Keep at least one data-backed action for every segment.
-        - Preserve model limitations and observational caveats.
-        - Do not expose customer-level identifiers or raw transaction records.
-        - Do not describe observational comparisons as causal effects.
-        """
+    st.info(
+        "**Approval must be done locally and committed to git.** "
+        "Approvals made on Streamlit Cloud are written to the running container only "
+        "and are lost on the next deploy. After approving, commit "
+        "`reports/ai_insight_brief_llm_approved.json` to the repository so the "
+        "audit trail is preserved."
     )
+
+    if not llm_brief_text:
+        st.info(
+            "No LLM brief found. Run `python src/generate_insight_brief_llm.py` "
+            "to generate one, then return here to approve it."
+        )
+    elif llm_approved:
+        st.success(
+            f"LLM brief approved by **{approval.get('approved_by', '—')}** "
+            f"at {approval.get('approved_at', '—')} using model `{approval.get('model', '—')}`."
+        )
+        if st.button("Revoke approval"):
+            APPROVED_PATH.unlink(missing_ok=True)
+            st.rerun()
+    else:
+        st.subheader("Human Review — LLM Brief")
+        st.markdown(
+            "Read the LLM brief carefully before approving. "
+            "Check every item below, then enter your name and click **Approve**."
+        )
+
+        all_checked = all(
+            st.checkbox(item, key=f"check_{i}")
+            for i, item in enumerate(_REVIEW_CHECKLIST)
+        )
+
+        reviewer = st.text_input("Your name (for the audit record)")
+
+        if st.button("Approve LLM brief", disabled=not (all_checked and reviewer.strip())):
+            approval_record = {
+                "approved": True,
+                "approved_by": reviewer.strip(),
+                "approved_at": datetime.now(timezone.utc).isoformat(),
+                "model": approval.get("model", "gpt-4.1-mini"),
+            }
+            APPROVED_PATH.write_text(
+                json.dumps(approval_record, indent=2) + "\n", encoding="utf-8"
+            )
+            st.success("Brief approved. The LLM version will now appear on the Brief Draft tab.")
+            st.rerun()
 
 st.divider()
 st.caption(

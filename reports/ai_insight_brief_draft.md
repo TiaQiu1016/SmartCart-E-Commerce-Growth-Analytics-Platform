@@ -1,23 +1,23 @@
-# SmartCart AI Insight Brief Draft
+# SmartCart AI Insight Brief - Reviewed Candidate
 
-Generated: 2026-07-13 17:53 UTC
+Generated: 2026-07-23 09:26 UTC
 
 ## Scope and Guardrails
 
-This draft is generated from computed SmartCart outputs only. It does not invent metrics, recompute models, or make causal claims. A team member should verify the cited numbers before using the wording in the dashboard or final report.
+This brief is generated from computed SmartCart outputs only. It does not invent metrics, recompute models, or make causal claims. Each segment action is tied to model output and should remain traceable in the dashboard, final report, and presentation.
 
 ## Executive Summary
 
-- The highest-value segment is **Champions**, with average BG/NBD CLV of GBP 5,698 and average purchase propensity of 77.6%.
-- The lowest-value segment is **Hibernating**, with average BG/NBD CLV of GBP 217 and average purchase propensity of 20.8%.
+- The highest-value segment is **Champions**, with average BG/NBD CLV of GBP 5,698 and average purchase propensity of 77.5%.
+- The lowest-value segment is **Hibernating**, with average BG/NBD CLV of GBP 217 and average purchase propensity of 20.5%.
 - Recommendations below are segment-specific and evidence-backed; they should be reviewed before being shown to retailers.
 
 ## Segment Actions
 
-- **Champions:** Protect and grow with VIP retention, early access, and referral offers. Evidence: avg CLV GBP 5,698, purchase propensity 77.6%, BG/NBD p_alive 98.0%, insufficient repeat history 0.2%.
-- **Recent / Promising:** Trigger a second-purchase campaign while recency is still strong. Evidence: avg CLV GBP 1,093, purchase propensity 49.1%, BG/NBD p_alive 96.7%, insufficient repeat history 19.2%.
-- **At Risk High-Value:** Prioritize win-back messaging because past value is high but recent activity is weak. Evidence: avg CLV GBP 951, purchase propensity 42.5%, BG/NBD p_alive 84.0%, insufficient repeat history 1.9%.
-- **Hibernating:** Use low-cost reactivation only; avoid heavy discount spend unless basket value improves. Evidence: avg CLV GBP 217, purchase propensity 20.8%, BG/NBD p_alive 91.6% (note: BG/NBD can overestimate p_alive for very inactive customers), insufficient repeat history 69.6%.
+- **Champions:** Protect and grow with VIP retention, early access, and referral offers. Evidence: avg CLV GBP 5,698, purchase propensity 77.5%, BG/NBD p_alive 98.0%, insufficient repeat history 0.2%.
+- **Recent / Promising:** Trigger a second-purchase campaign while recency is still strong. Evidence: avg CLV GBP 1,093, purchase propensity 49.3%, BG/NBD p_alive 96.7%, insufficient repeat history 19.2%.
+- **At Risk High-Value:** Prioritize win-back messaging because past value is high but recent activity is weak. Evidence: avg CLV GBP 951, purchase propensity 41.7%, BG/NBD p_alive 84.0%, insufficient repeat history 1.9%.
+- **Hibernating:** Use low-cost reactivation only; avoid heavy discount spend unless basket value improves. Evidence: avg CLV GBP 217, purchase propensity 20.5%, BG/NBD p_alive 91.6% (note: BG/NBD can overestimate p_alive for very inactive customers), insufficient repeat history 69.6%.
 
 ## Group Comparison Signals
 
@@ -29,16 +29,16 @@ This draft is generated from computed SmartCart outputs only. It does not invent
 
 ## Predictive Churn Signals
 
-- **Hibernating**: observed future churn rate 81.2% across 420 evaluated customers; average predicted churn probability 79.7%.
-- **At Risk High-Value**: observed future churn rate 54.1% across 329 evaluated customers; average predicted churn probability 52.5%.
-- **Recent / Promising**: observed future churn rate 43.8% across 128 evaluated customers; average predicted churn probability 45.0%.
-- **Champions**: observed future churn rate 12.8% across 180 evaluated customers; average predicted churn probability 15.9%.
+- **Hibernating**: observed future churn rate 81.2% across 420 evaluated customers; average predicted churn probability 79.6%.
+- **At Risk High-Value**: observed future churn rate 54.1% across 329 evaluated customers; average predicted churn probability 53.1%.
+- **Recent / Promising**: observed future churn rate 43.8% across 128 evaluated customers; average predicted churn probability 44.7%.
+- **Champions**: observed future churn rate 12.8% across 180 evaluated customers; average predicted churn probability 16.8%.
 - These results use `segments_at_cutoff` (pre-cutoff RFM features only) matched against post-cutoff actual churn outcomes on the held-out test set. The design is leakage-free: segment labels and churn labels come from non-overlapping time windows.
 
 ## Product Recommendation Signals
 
-- When customers buy **ROSES REGENCY TEACUP AND SAUCER**, consider recommending **GREEN REGENCY TEACUP AND SAUCER** (confidence 70.7%, lift 25.37).
 - When customers buy **GREEN REGENCY TEACUP AND SAUCER**, consider recommending **ROSES REGENCY TEACUP AND SAUCER** (confidence 79.8%, lift 25.37).
+- When customers buy **ROSES REGENCY TEACUP AND SAUCER**, consider recommending **GREEN REGENCY TEACUP AND SAUCER** (confidence 70.7%, lift 25.37).
 - When customers buy **ALARM CLOCK BAKELIKE GREEN**, consider recommending **ALARM CLOCK BAKELIKE RED** (confidence 67.8%, lift 20.08).
 - When customers buy **ALARM CLOCK BAKELIKE RED**, consider recommending **ALARM CLOCK BAKELIKE GREEN** (confidence 61.4%, lift 20.08).
 - When customers buy **CHARLOTTE BAG PINK POLKADOT**, consider recommending **RED RETROSPOT CHARLOTTE BAG** (confidence 63.4%, lift 14.39).
@@ -52,5 +52,5 @@ This draft is generated from computed SmartCart outputs only. It does not invent
 
 - Confirm every number against `data/insight_inputs.json`.
 - Keep at least one data-backed action for every segment.
-- Preserve limitations when moving this draft into the dashboard.
+- Preserve limitations when moving this candidate brief into the dashboard.
 - Do not expose customer-level identifiers in the final brief.

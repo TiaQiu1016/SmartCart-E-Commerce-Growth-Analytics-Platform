@@ -30,7 +30,8 @@ reserve as a backup source.
 
 Python (pandas, numpy, scikit-learn, XGBoost, mlxtend, lifetimes),
 SQLite for the SQL data layer and aggregation, Plotly + Streamlit for the dashboard,
-an LLM API (such as Claude) for AI-generated briefs, and GitHub for version control.
+a deterministic evidence-based insight-brief generator with optional future LLM extension,
+and GitHub for version control.
 
 ## Repository Structure
 
@@ -120,8 +121,20 @@ python src/group_comparison.py   # observational group tests -> `group_compariso
 python src/cohort_analysis.py    # monthly cohort retention and revenue -> `cohort_retention`, `cohort_revenue`
 python src/make_figures.py       # EDA / descriptive figures
 python src/prepare_insight_inputs.py  # computed module outputs -> local structured JSON
-python src/generate_insight_brief.py  # structured JSON -> reviewable Markdown insight brief draft
+python src/generate_insight_brief.py      # structured JSON -> deterministic Markdown brief candidate
+python src/generate_insight_brief_llm.py  # optional: OpenAI API -> LLM-generated brief candidate
 ```
+
+Optional LLM brief generation uses the OpenAI API. Keep the API key local and never commit it:
+
+```powershell
+$env:OPENAI_API_KEY="your_api_key_here"
+python src/generate_insight_brief_llm.py --model gpt-4.1-mini
+```
+
+The script writes `reports/ai_insight_brief_llm.md` and an automated guardrail check at
+`reports/ai_insight_brief_llm_validation.md`. The deterministic brief remains available as a
+fallback if API access is unavailable.
 
 SQL scripts in `sql/` can be run standalone, e.g. `sqlite3 data/smartcart.db < sql/eda_summary.sql`.
 
