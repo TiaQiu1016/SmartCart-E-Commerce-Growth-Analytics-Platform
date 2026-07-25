@@ -82,7 +82,7 @@ pivot = (
 )
 
 # Build text annotations
-text_vals = pivot.applymap(lambda v: f"{v:.0%}" if pd.notna(v) else "")
+text_vals = pivot.map(lambda v: f"{v:.0%}" if pd.notna(v) else "")
 
 fig_heat = go.Figure(
     go.Heatmap(
