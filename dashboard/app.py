@@ -131,14 +131,14 @@ display_cols = {
     "customers": "Customers",
     "avg_recency_days": "Avg Recency (days)",
     "avg_frequency": "Avg Orders",
-    "avg_monetary": "Avg Revenue (£)",
-    "avg_clv_estimate": "Avg CLV (£)",
+    "avg_monetary": f"Avg Revenue ({CURRENCY})",
+    "avg_clv_estimate": f"Avg CLV ({CURRENCY})",
     "churn_rate_snapshot": "Inactive Rate",
     "uk_share": "UK Share",
 }
 tbl = seg_summary[list(display_cols.keys())].rename(columns=display_cols).copy()
-tbl["Avg Revenue (£)"] = tbl["Avg Revenue (£)"].map(lambda v: f"{CURRENCY}{v:,.0f}")
-tbl["Avg CLV (£)"] = tbl["Avg CLV (£)"].map(lambda v: f"{CURRENCY}{v:,.0f}")
+tbl[f"Avg Revenue ({CURRENCY})"] = tbl[f"Avg Revenue ({CURRENCY})"].map(lambda v: f"{CURRENCY}{v:,.0f}")
+tbl[f"Avg CLV ({CURRENCY})"] = tbl[f"Avg CLV ({CURRENCY})"].map(lambda v: f"{CURRENCY}{v:,.0f}")
 tbl["Avg Recency (days)"] = tbl["Avg Recency (days)"].map("{:.0f}".format)
 tbl["Avg Orders"] = tbl["Avg Orders"].map("{:.1f}".format)
 tbl["Inactive Rate"] = (seg_summary["churn_rate_snapshot"] * 100).map("{:.1f}%".format)

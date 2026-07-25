@@ -179,10 +179,10 @@ top50 = (
         ["customer_id", "propensity_score", "segment", "recency_days", "frequency", "monetary", "clv_estimate"]
     ].copy()
 )
-top50.columns = ["Customer ID", "Propensity Score", "Segment", "Recency (days)", "Orders", "Revenue (£)", "CLV (£)"]
+top50.columns = ["Customer ID", "Propensity Score", "Segment", "Recency (days)", "Orders", f"Revenue ({CURRENCY})", f"CLV ({CURRENCY})"]
 top50["Propensity Score"] = top50["Propensity Score"].map("{:.3f}".format)
-top50["Revenue (£)"] = top50["Revenue (£)"].map(lambda v: f"{CURRENCY}{v:,.0f}")
-top50["CLV (£)"] = top50["CLV (£)"].map(lambda v: f"{CURRENCY}{v:,.0f}")
+top50[f"Revenue ({CURRENCY})"] = top50[f"Revenue ({CURRENCY})"].map(lambda v: f"{CURRENCY}{v:,.0f}")
+top50[f"CLV ({CURRENCY})"] = top50[f"CLV ({CURRENCY})"].map(lambda v: f"{CURRENCY}{v:,.0f}")
 st.dataframe(top50, use_container_width=True, hide_index=True)
 
 st.divider()

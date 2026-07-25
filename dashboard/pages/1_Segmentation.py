@@ -112,7 +112,7 @@ with col2:
         text=clv_by_seg["clv_estimate"].map(lambda v: f"{CURRENCY}{v:,.0f}"),
     )
     fig2.update_traces(textposition="outside")
-    fig2.update_layout(**PLOTLY_LAYOUT, xaxis_title=None, yaxis_title="Avg CLV (£)")
+    fig2.update_layout(**PLOTLY_LAYOUT, xaxis_title=None, yaxis_title=f"Avg CLV ({CURRENCY})")
     st.plotly_chart(fig2, use_container_width=True)
 
 # ── Silhouette score — k selection validation ─────────────────────────────────
@@ -185,8 +185,8 @@ fig3 = px.scatter(
     labels={
         "recency_days": "Days Since Last Purchase",
         "frequency": "Number of Orders",
-        "monetary": "Revenue (£)",
-        "clv_estimate": "CLV Estimate (£)",
+        "monetary": f"Revenue ({CURRENCY})",
+        "clv_estimate": f"CLV Estimate ({CURRENCY})",
     },
     size_max=30,
     opacity=0.7,
@@ -198,7 +198,7 @@ st.plotly_chart(fig3, use_container_width=True)
 st.subheader("RFM Distribution by Segment")
 metric_choice = st.selectbox(
     "Select metric", ["recency_days", "frequency", "monetary"],
-    format_func=lambda x: {"recency_days": "Recency (days)", "frequency": "Order Frequency", "monetary": "Revenue (£)"}[x],
+    format_func=lambda x: {"recency_days": "Recency (days)", "frequency": "Order Frequency", "monetary": f"Revenue ({CURRENCY})"}[x],
 )
 fig4 = px.box(
     segments,
@@ -246,7 +246,7 @@ if has_bgnbd:
                    textposition="outside"),
         ])
         fig_cmp.update_layout(**PLOTLY_LAYOUT, barmode="group",
-                               xaxis_title=None, yaxis_title="Avg CLV (£)")
+                               xaxis_title=None, yaxis_title=f"Avg CLV ({CURRENCY})")
         st.plotly_chart(fig_cmp, use_container_width=True)
 
     with col_b2:
@@ -263,10 +263,10 @@ if has_bgnbd:
 
     # Segment detail table including purchase weeks prediction
     seg_tbl = seg_compare.copy()
-    seg_tbl.columns = ["Segment", "Baseline CLV (£)", "BG/NBD CLV (£)",
+    seg_tbl.columns = ["Segment", f"Baseline CLV ({CURRENCY})", f"BG/NBD CLV ({CURRENCY})",
                         "Avg P(Alive)", "Pred. Purchase Weeks (12m)"]
-    seg_tbl["Baseline CLV (£)"] = seg_tbl["Baseline CLV (£)"].map(lambda v: f"{CURRENCY}{v:,.0f}")
-    seg_tbl["BG/NBD CLV (£)"] = seg_tbl["BG/NBD CLV (£)"].map(lambda v: f"{CURRENCY}{v:,.0f}")
+    seg_tbl[f"Baseline CLV ({CURRENCY})"] = seg_tbl[f"Baseline CLV ({CURRENCY})"].map(lambda v: f"{CURRENCY}{v:,.0f}")
+    seg_tbl[f"BG/NBD CLV ({CURRENCY})"] = seg_tbl[f"BG/NBD CLV ({CURRENCY})"].map(lambda v: f"{CURRENCY}{v:,.0f}")
     seg_tbl["Avg P(Alive)"] = seg_tbl["Avg P(Alive)"].map("{:.2f}".format)
     seg_tbl["Pred. Purchase Weeks (12m)"] = seg_tbl["Pred. Purchase Weeks (12m)"].map("{:.1f}".format)
     st.dataframe(seg_tbl, use_container_width=True, hide_index=True)
@@ -304,7 +304,7 @@ for _, row in profiles.sort_values("customers", ascending=False).iterrows():
         <div class="action-card">
             <strong style="color:{BLUE}">{row['segment']}</strong>
             &nbsp;·&nbsp; {int(row['customers']):,} customers
-            &nbsp;·&nbsp; Avg CLV: £{row['monetary']:.0f}
+            &nbsp;·&nbsp; Avg CLV: {CURRENCY}{row['monetary']:.0f}
             <br/><span style="color:#444">{row['recommended_action']}</span>
         </div>
         """,
@@ -314,8 +314,8 @@ for _, row in profiles.sort_values("customers", ascending=False).iterrows():
 # ── detailed profile table ────────────────────────────────────────────────────
 st.subheader("Segment Profile Detail")
 disp = profiles[["segment", "customers", "recency_days", "frequency", "monetary"]].copy()
-disp.columns = ["Segment", "Customers", "Avg Recency (days)", "Avg Orders", "Avg Revenue (£)"]
-disp["Avg Revenue (£)"] = disp["Avg Revenue (£)"].map(lambda v: f"{CURRENCY}{v:,.0f}")
+disp.columns = ["Segment", "Customers", "Avg Recency (days)", "Avg Orders", f"Avg Revenue ({CURRENCY})"]
+disp[f"Avg Revenue ({CURRENCY})"] = disp[f"Avg Revenue ({CURRENCY})"].map(lambda v: f"{CURRENCY}{v:,.0f}")
 disp["Avg Recency (days)"] = disp["Avg Recency (days)"].map("{:.0f}".format)
 disp["Avg Orders"] = disp["Avg Orders"].map("{:.1f}".format)
 disp = disp.sort_values("Customers", ascending=False)

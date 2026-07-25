@@ -252,8 +252,8 @@ with tab3:
         "customers": "Customers",
         "avg_recency_days": "Avg Recency (days)",
         "avg_frequency": "Avg Orders",
-        "avg_monetary": "Avg Revenue (£)",
-        "avg_clv_estimate": "Avg CLV (£)",
+        "avg_monetary": f"Avg Revenue ({CURRENCY})",
+        "avg_clv_estimate": f"Avg CLV ({CURRENCY})",
         "churn_rate_snapshot": "Inactive Rate",
         "uk_share": "UK Share",
     })
@@ -266,10 +266,10 @@ with tab3:
         "Compare segments on",
         ["avg_monetary", "avg_frequency", "avg_recency_days", "avg_clv_estimate"],
         format_func=lambda x: {
-            "avg_monetary": "Avg Revenue (£)",
+            "avg_monetary": f"Avg Revenue ({CURRENCY})",
             "avg_frequency": "Avg Orders",
             "avg_recency_days": "Avg Recency (days)",
-            "avg_clv_estimate": "Avg CLV (£)",
+            "avg_clv_estimate": f"Avg CLV ({CURRENCY})",
         }[x],
         key="seg_metric",
     )
