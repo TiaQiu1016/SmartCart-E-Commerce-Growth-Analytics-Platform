@@ -15,6 +15,8 @@ import streamlit as st
 from utils import (
     ACCENT,
     BLUE,
+    CHURN_HIGH,
+    CHURN_MEDIUM,
     CURRENCY,
     PLOTLY_LAYOUT,
     load_churn_scores,
@@ -94,8 +96,8 @@ full = (
 )
 
 full["risk_band"] = "Low"
-full.loc[full["predicted_churn_probability"] >= 0.50, "risk_band"] = "Medium"
-full.loc[full["predicted_churn_probability"] >= 0.75, "risk_band"] = "High"
+full.loc[full["predicted_churn_probability"] >= CHURN_MEDIUM, "risk_band"] = "Medium"
+full.loc[full["predicted_churn_probability"] >= CHURN_HIGH, "risk_band"] = "High"
 
 test = full[full.get("is_test_set", 0) == 1].copy()
 if test.empty:
@@ -108,17 +110,18 @@ cutoff = str(full["feature_cutoff_date"].dropna().iloc[0]) if "feature_cutoff_da
 window = int(full["label_window_days"].dropna().iloc[0]) if "label_window_days" in full else 90
 auc_note = "0.800"
 
-high_risk_n = (full["predicted_churn_probability"] >= 0.75).sum()
+high_risk_n = (full["predicted_churn_probability"] >= CHURN_HIGH).sum()
 went_quiet_pct = 100 * test["actual_churn_label"].mean()
 
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Customers Scored", f"{len(full):,}")
 k2.metric("Went Quiet (Observed)", f"{went_quiet_pct:.1f}%", help="Share of customers who made no purchase in the 90-day window following the analysis cutoff")
-k3.metric("High-Risk Customers", f"{high_risk_n:,}", help="Customers with a predicted churn probability of 75% or higher")
+k3.metric("High-Risk Customers", f"{high_risk_n:,}", help=f"Customers with a predicted churn probability of {CHURN_HIGH:.0%} or higher")
 k4.metric("Predictive Accuracy", "80.0%", help="How often the model correctly identifies whether a customer will churn (AUC-based)")
 
 st.caption(
-    f"Risk bands: High = predicted churn probability ≥ 75%; Medium = 50–75%; Low = below 50%. "
+    f"Risk bands: High = predicted churn probability ≥ {CHURN_HIGH:.0%}; "
+    f"Medium = {CHURN_MEDIUM:.0%}–{CHURN_HIGH:.0%}; Low = below {CHURN_MEDIUM:.0%}. "
     f"Scores are based on purchase behavior through {cutoff}."
 )
 
@@ -136,7 +139,7 @@ with col1:
         labels={"predicted_churn_probability": "Predicted Churn Probability"},
     )
     fig_dist.add_vline(
-        x=0.75,
+        x=CHURN_HIGH,
         line_dash="dash",
         line_color=ACCENT,
         annotation_text="High risk",
@@ -244,17 +247,17 @@ top_customers.columns = [
     "Actual Future Churn",
     "Recency (days)",
     "Orders",
-    "Revenue (GBP)",
-    "CLV (GBP)",
+    f"Revenue ({CURRENCY})",
+    f"CLV ({CURRENCY})",
 ]
 top_customers["Predicted Churn"] = top_customers["Predicted Churn"].map("{:.1%}".format)
 top_customers["Actual Future Churn"] = top_customers["Actual Future Churn"].map(
     {1: "Yes", 0: "No"}
 )
-top_customers["Revenue (GBP)"] = top_customers["Revenue (GBP)"].map(
+top_customers[f"Revenue ({CURRENCY})"] = top_customers[f"Revenue ({CURRENCY})"].map(
     lambda v: f"{CURRENCY}{v:,.0f}" if v == v else ""
 )
-top_customers["CLV (GBP)"] = top_customers["CLV (GBP)"].map(
+top_customers[f"CLV ({CURRENCY})"] = top_customers[f"CLV ({CURRENCY})"].map(
     lambda v: f"{CURRENCY}{v:,.0f}" if v == v else ""
 )
 

@@ -27,6 +27,27 @@ def _read_config() -> dict:
 CONFIG = _read_config()
 CURRENCY = CONFIG.get("company", {}).get("currency_symbol", "£")
 COMPANY_NAME = CONFIG.get("company", {}).get("name", "SmartCart")
+CHURN_HIGH = float(CONFIG.get("models", {}).get("churn_high_risk_threshold", 0.75))
+CHURN_MEDIUM = float(CONFIG.get("models", {}).get("churn_medium_risk_threshold", 0.50))
+COURSE_LABEL = CONFIG.get("project", {}).get("course", "")
+DATA_SOURCE = CONFIG.get("project", {}).get("data_source", "")
+
+
+@st.cache_data
+def _sidebar_customer_count() -> int:
+    try:
+        with sqlite3.connect(DB_PATH) as con:
+            tables = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            if "transactions_summary" in tables:
+                row = con.execute("SELECT n_customers FROM transactions_summary").fetchone()
+            elif "segments" in tables:
+                row = con.execute("SELECT COUNT(DISTINCT customer_id) FROM segments").fetchone()
+            else:
+                return 0
+            return int(row[0]) if row else 0
+    except Exception:
+        return 0
+
 
 def render_sidebar() -> None:
     """Consistent SmartCart branding and shared CSS for every page."""
@@ -55,8 +76,12 @@ def render_sidebar() -> None:
         st.markdown("## SmartCart")
         st.markdown("**E-Commerce Growth Analytics**")
         st.divider()
-        st.caption("Online Retail II · 5,878 customers")
-        st.caption("McGill Desautels MMA · BUSA 649")
+        n_customers = _sidebar_customer_count()
+        customer_label = f"{n_customers:,} customers" if n_customers else "—"
+        dataset_label = DATA_SOURCE.split("(")[0].strip() if DATA_SOURCE else COMPANY_NAME
+        st.caption(f"{dataset_label} · {customer_label}")
+        if COURSE_LABEL:
+            st.caption(COURSE_LABEL)
         st.divider()
         st.caption("Pages: Overview · Segmentation · Propensity · Market Basket · Group Insights · Cohort · Churn Risk")
 

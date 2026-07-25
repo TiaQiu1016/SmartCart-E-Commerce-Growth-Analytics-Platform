@@ -31,7 +31,13 @@ filters:
 models:
   propensity_horizon_days: 30
   churn_horizon_days: 90
+  churn_high_risk_threshold: 0.75   # customers at or above this score are flagged High risk
+  churn_medium_risk_threshold: 0.50 # customers at or above this score (but below high) are Medium risk
   market_basket:
     min_support: 0.02
     min_confidence: 0.30
     min_lift: 1.50
+
+project:
+  course: "BUSA 649, McGill Desautels MMA"
+  data_source: "Online Retail II (UCI / Kaggle, CC BY 4.0)"
