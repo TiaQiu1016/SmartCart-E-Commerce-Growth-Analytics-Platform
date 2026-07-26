@@ -101,7 +101,7 @@ if brief_source == "none":
 if llm_brief_text and not llm_approved:
     st.warning(
         "An LLM-generated brief exists but has not been reviewed by a team member. "
-        "The deterministic draft is shown below. Open the **Guardrails** tab to review "
+        "The deterministic brief is shown below. Open the **Review Guardrails** tab to review "
         "and approve the LLM brief."
     )
 
@@ -125,16 +125,20 @@ st.caption(
 
 st.divider()
 
-tab1, tab2, tab3 = st.tabs(["Brief Draft", "Input Status", "Guardrails"])
+tab1, tab2, tab3 = st.tabs(["Insight Brief", "Evidence Status", "Review Guardrails"])
 
 with tab1:
     if brief_source == "llm":
         st.success(
-            f"LLM brief — reviewed and approved by **{approval.get('approved_by', 'team member')}** "
-            f"on {approval.get('approved_at', '')[:10]}."
+            f"AI-generated insight brief approved for dashboard use by "
+            f"**{approval.get('approved_by', 'team member')}** on "
+            f"{approval.get('approved_at', '')[:10]}."
         )
     else:
-        st.info("Showing deterministic draft. Approve the LLM brief in the Guardrails tab to upgrade.")
+        st.info(
+            "Showing the deterministic evidence brief. Review and approve the "
+            "LLM-generated version in the Review Guardrails tab to publish it here."
+        )
 
     st.markdown('<div class="brief-box">', unsafe_allow_html=True)
     st.markdown(active_brief)
@@ -230,7 +234,7 @@ with tab3:
             APPROVED_PATH.write_text(
                 json.dumps(approval_record, indent=2) + "\n", encoding="utf-8"
             )
-            st.success("Brief approved. The LLM version will now appear on the Brief Draft tab.")
+            st.success("Brief approved. The LLM version will now appear on the Insight Brief tab.")
             st.rerun()
 
 st.divider()
