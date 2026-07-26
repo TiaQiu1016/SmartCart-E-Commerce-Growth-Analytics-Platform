@@ -143,6 +143,28 @@ distinct — it does not prove that geography or segment membership *caused* the
 
 ---
 
+## AI Insight Brief
+
+**What it does:** Turns the computed SmartCart outputs into a plain-language business brief:
+segment actions, churn signals, CLV context, group differences, and product recommendations.
+
+**How to use it:** The approved brief is shown on the Insight Brief tab. If the retailer
+uploads new data or reruns the analytics pipeline, use **Generate / Refresh AI Brief** in
+the Review Guardrails tab to create a new AI-written candidate. The dashboard calls the
+OpenAI API only when that button is clicked; simply opening or refreshing the page does not
+call the API.
+
+**Review workflow:** After generation, the new brief is treated as unapproved. A team member
+must review the validation report, confirm that every number is traceable to
+`data/insight_inputs.json`, check that no causal claims are made, and approve the brief
+before it is shown as the final dashboard version.
+
+**If the button is disabled:** the current environment does not have an OpenAI API key
+configured. The already approved demo brief remains visible, but a new AI brief cannot be
+generated until `OPENAI_API_KEY` is added locally or through Streamlit secrets.
+
+---
+
 ## Overview page
 
 The landing page shows five top-line KPIs (total customers, total revenue, total invoices,

@@ -3,6 +3,7 @@ AI Insight Brief page: reviewable business narrative from computed outputs.
 """
 
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,6 +15,8 @@ import streamlit as st
 from utils import ACCENT, BLUE, render_sidebar
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "src"))
+
 BRIEF_PATH = ROOT / "reports" / "ai_insight_brief_draft.md"
 LLM_BRIEF_PATH = ROOT / "reports" / "ai_insight_brief_llm.md"
 APPROVED_PATH = ROOT / "reports" / "ai_insight_brief_llm_approved.json"
@@ -67,12 +70,38 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def configure_api_key_from_secrets() -> bool:
+    """Return True when the OpenAI key is available from env, .env, or Streamlit secrets."""
+    if os.getenv("OPENAI_API_KEY"):
+        return True
+
+    env_path = ROOT / ".env"
+    if env_path.exists():
+        for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if line.startswith("OPENAI_API_KEY="):
+                value = line.split("=", 1)[1].strip().strip('"').strip("'")
+                if value:
+                    os.environ["OPENAI_API_KEY"] = value
+                    return True
+
+    try:
+        secret_key = st.secrets.get("OPENAI_API_KEY")
+    except Exception:
+        secret_key = None
+    if secret_key:
+        os.environ["OPENAI_API_KEY"] = str(secret_key)
+        return True
+    return False
+
+
 payload = load_json(INPUT_PATH)
 approval = load_json(APPROVED_PATH)
 llm_brief_text = LLM_BRIEF_PATH.read_text(encoding="utf-8") if LLM_BRIEF_PATH.exists() else ""
 deterministic_text = BRIEF_PATH.read_text(encoding="utf-8") if BRIEF_PATH.exists() else ""
 validation_text = VALIDATION_PATH.read_text(encoding="utf-8") if VALIDATION_PATH.exists() else ""
 llm_approved = bool(approval.get("approved"))
+api_key_available = configure_api_key_from_secrets()
 
 # Determine which brief to surface
 if llm_brief_text and llm_approved:
@@ -166,6 +195,55 @@ with tab2:
         st.json(metadata)
 
 with tab3:
+    st.subheader("Generate or Refresh Brief")
+    st.markdown(
+        "Use this when a retailer uploads new data or reruns the analytics pipeline. "
+        "The API is called only when this button is clicked; simply loading the "
+        "dashboard does not call OpenAI."
+    )
+
+    model_name = st.text_input("Model", value=approval.get("model", "gpt-4.1-mini"))
+    if api_key_available:
+        generate_clicked = st.button("Generate / Refresh AI Brief")
+    else:
+        generate_clicked = st.button("Generate / Refresh AI Brief", disabled=True)
+        st.info(
+            "OpenAI API key is not configured for this environment. For local use, "
+            "set `OPENAI_API_KEY`; for Streamlit Cloud, add it in app secrets. "
+            "The approved demo brief remains available without calling the API."
+        )
+
+    if generate_clicked:
+        try:
+            from generate_insight_brief_llm import call_openai, validate_brief, write_validation
+
+            with st.spinner("Generating a new AI insight brief from computed outputs..."):
+                refreshed_payload = load_json(INPUT_PATH)
+                if not refreshed_payload:
+                    raise RuntimeError(
+                        "Structured input is missing. Run `python src/prepare_insight_inputs.py` first."
+                    )
+                new_brief = call_openai(refreshed_payload, model_name.strip() or "gpt-4.1-mini")
+                LLM_BRIEF_PATH.write_text(new_brief + "\n", encoding="utf-8")
+                passed, warnings = validate_brief(new_brief, refreshed_payload)
+                write_validation(
+                    VALIDATION_PATH,
+                    passed,
+                    warnings,
+                    model_name.strip() or "gpt-4.1-mini",
+                )
+                APPROVED_PATH.unlink(missing_ok=True)
+
+            st.success(
+                "New AI brief generated. Review the validation report and approve it "
+                "before publishing it on the Insight Brief tab."
+            )
+            st.rerun()
+        except Exception as exc:
+            st.error(f"Unable to generate AI brief: {exc}")
+
+    st.divider()
+
     st.subheader("Generation Guardrails")
     guardrails = payload.get("generation_requirements", {})
     if guardrails:
