@@ -25,7 +25,7 @@ def _read_config() -> dict:
 
 
 CONFIG = _read_config()
-CURRENCY = CONFIG.get("company", {}).get("currency_symbol", "£")
+CURRENCY = CONFIG.get("company", {}).get("currency_symbol", "GBP ")
 COMPANY_NAME = CONFIG.get("company", {}).get("name", "SmartCart")
 CHURN_HIGH = float(CONFIG.get("models", {}).get("churn_high_risk_threshold", 0.75))
 CHURN_MEDIUM = float(CONFIG.get("models", {}).get("churn_medium_risk_threshold", 0.50))
@@ -74,16 +74,15 @@ def render_sidebar() -> None:
     )
     with st.sidebar:
         st.markdown("## SmartCart")
-        st.markdown("**E-Commerce Growth Analytics**")
+        st.markdown("**Retail Growth Dashboard**")
         st.divider()
         n_customers = _sidebar_customer_count()
-        customer_label = f"{n_customers:,} customers" if n_customers else "—"
+        customer_label = f"{n_customers:,} customers" if n_customers else "-"
         dataset_label = DATA_SOURCE.split("(")[0].strip() if DATA_SOURCE else COMPANY_NAME
-        st.caption(f"{dataset_label} · {customer_label}")
-        if COURSE_LABEL:
-            st.caption(COURSE_LABEL)
+        st.caption(f"{dataset_label} - {customer_label}")
+        # Keep academic/project labels out of the customer-facing dashboard.
         st.divider()
-        st.caption("Pages: Overview · Segmentation · Propensity · Market Basket · Group Insights · Cohort · Churn Risk · AI Brief · User Guide")
+        st.caption("Use the pages above to review customer groups, churn risk, product opportunities, and the AI summary.")
 
 
 PLOTLY_LAYOUT = dict(

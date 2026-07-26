@@ -25,10 +25,10 @@ INPUT_PATH = ROOT / "data" / "insight_inputs.json"
 LIVE_AI_FLAG = "SMARTCART_ENABLE_LIVE_AI"
 
 _REVIEW_CHECKLIST = [
-    "Every number in the brief matches `data/insight_inputs.json`",
-    "No observational result is described as a causal effect",
-    "Every segment has one data-backed recommended action",
-    "API-generated wording is appropriate for final submission",
+    "Every number in the brief matches SmartCart's analytics outputs",
+    "No pattern is described as a proven cause",
+    "Every customer group has one data-backed recommended action",
+    "AI wording is appropriate for customer-facing use",
     "No customer-level identifiers are exposed",
 ]
 
@@ -58,10 +58,9 @@ render_sidebar()
 
 st.title("AI Insight Brief")
 st.markdown(
-    "A plain-language summary of what your customer data is telling you — segment health, "
-    "who is at risk of churning, which products drive cross-sell revenue, and where groups "
-    "of customers behave differently. All numbers are pulled directly from the analysis; "
-    "no metrics are invented."
+    "A plain-language summary of what the customer data is telling you: which groups need attention, "
+    "where churn risk is highest, and which product pairings can support cross-sell campaigns. "
+    "All numbers come from SmartCart's verified analysis outputs; the AI does not invent metrics."
 )
 
 
@@ -97,7 +96,7 @@ def configure_api_key_from_secrets() -> bool:
 
 
 def live_generation_enabled() -> bool:
-    """Live API generation is opt-in so demo viewers cannot spend API credits."""
+    """Live AI generation is opt-in so demo viewers cannot spend API credits."""
     flag = os.getenv(LIVE_AI_FLAG, "").strip().lower()
     if flag in {"1", "true", "yes", "on"}:
         return True
@@ -117,35 +116,27 @@ llm_approved = bool(approval.get("approved"))
 api_key_available = configure_api_key_from_secrets()
 live_ai_enabled = live_generation_enabled()
 
-# Determine which brief to surface
 if llm_brief_text and llm_approved:
     active_brief = llm_brief_text
-    brief_source = "llm"
+    brief_source = "ai"
 elif deterministic_text:
     active_brief = deterministic_text
-    brief_source = "deterministic"
+    brief_source = "rule_based"
 else:
     active_brief = ""
     brief_source = "none"
 
 if not payload:
-    st.warning(
-        "`data/insight_inputs.json` is not available. Run "
-        "`python src/prepare_insight_inputs.py` before reviewing the brief."
-    )
+    st.warning("The evidence file is not available. Ask an admin to refresh SmartCart outputs before reviewing the brief.")
 
 if brief_source == "none":
-    st.warning(
-        "No brief is available. Run `python src/generate_insight_brief.py` first."
-    )
+    st.warning("No brief is available yet. Ask an admin to generate the first SmartCart insight brief.")
     st.stop()
 
-# Show a banner when the LLM brief exists but hasn't been reviewed yet
 if llm_brief_text and not llm_approved:
     st.warning(
-        "An LLM-generated brief exists but has not been reviewed by a team member. "
-        "The deterministic brief is shown below. Open the **Review Guardrails** tab to review "
-        "and approve the LLM brief."
+        "An AI-generated brief exists but has not been reviewed by a team member. "
+        "The rule-based evidence brief is shown below. Open Review & Controls to review and approve the AI brief."
     )
 
 metadata = payload.get("metadata", {})
@@ -156,31 +147,26 @@ recommendations = payload.get("top_product_recommendations", [])
 unavailable = payload.get("unavailable_modules", [])
 
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Segments Analyzed", f"{len(segments)}")
-k2.metric("Group Comparisons", f"{len(groups)}")
+k1.metric("Customer Groups", f"{len(segments)}")
+k2.metric("Group Insights", f"{len(groups)}")
 k3.metric("Product Suggestions", f"{len(recommendations)}")
-k4.metric("Churn Segments", f"{len(churn)}")
+k4.metric("Churn Risk Groups", f"{len(churn)}")
 
-st.caption(
-    "Source: computed SQLite outputs only. The brief should be reviewed by the "
-    "team before dashboard publication or final-report use."
-)
-
+st.caption("Source: SmartCart's verified analytics outputs. AI wording is reviewed before publication.")
 st.divider()
 
-tab1, tab2, tab3 = st.tabs(["Insight Brief", "Evidence Status", "Review Guardrails"])
+tab1, tab2, tab3 = st.tabs(["Insight Brief", "Evidence Used", "Review & Controls"])
 
 with tab1:
-    if brief_source == "llm":
+    if brief_source == "ai":
         st.success(
-            f"AI-generated insight brief approved for dashboard use by "
-            f"**{approval.get('approved_by', 'team member')}** on "
-            f"{approval.get('approved_at', '')[:10]}."
+            f"AI insight brief approved for dashboard use by **{approval.get('approved_by', 'team member')}** "
+            f"on {approval.get('approved_at', '')[:10]}."
         )
     else:
         st.info(
-            "Showing the deterministic evidence brief. Review and approve the "
-            "LLM-generated version in the Review Guardrails tab to publish it here."
+            "Showing the rule-based evidence brief. Review and approve the AI-generated version "
+            "in Review & Controls to publish it here."
         )
 
     st.markdown('<div class="brief-box">', unsafe_allow_html=True)
@@ -188,32 +174,30 @@ with tab1:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab2:
-    st.subheader("Structured Input Status")
-
+    st.subheader("Evidence Used in This Brief")
     status_rows = [
-        {"Input": "Segment summaries", "Status": "Available" if segments else "Missing", "Records": len(segments)},
-        {"Input": "Predictive churn by segment", "Status": "Available" if churn else "Missing", "Records": len(churn)},
-        {"Input": "Group comparisons", "Status": "Available" if groups else "Missing", "Records": len(groups)},
+        {"Input": "Customer group summaries", "Status": "Available" if segments else "Missing", "Records": len(segments)},
+        {"Input": "Churn risk by group", "Status": "Available" if churn else "Missing", "Records": len(churn)},
+        {"Input": "Group comparison insights", "Status": "Available" if groups else "Missing", "Records": len(groups)},
         {"Input": "Product recommendations", "Status": "Available" if recommendations else "Missing", "Records": len(recommendations)},
     ]
     st.dataframe(status_rows, use_container_width=True, hide_index=True)
 
-    st.markdown("#### Missing Inputs")
+    st.markdown("#### Unavailable Insights")
     if unavailable:
         for note in unavailable:
             st.warning(note)
     else:
-        st.success("No unavailable modules were reported in the structured input.")
+        st.success("All planned insight inputs are available.")
 
-    with st.expander("Raw metadata"):
+    with st.expander("Advanced: source metadata"):
         st.json(metadata)
 
 with tab3:
     st.subheader("Generate or Refresh Brief")
     st.markdown(
-        "Use this when a retailer uploads new data or reruns the analytics pipeline. "
-        "The API is called only when this button is clicked; simply loading the "
-        "dashboard does not call OpenAI."
+        "Use this when a retailer uploads new data or reruns the analytics refresh. "
+        "A new AI brief is generated only when this button is clicked; simply loading the dashboard does not call an AI provider."
     )
 
     model_name = st.text_input("Model", value=approval.get("model", "gpt-4.1-mini"))
@@ -223,16 +207,13 @@ with tab3:
         generate_clicked = st.button("Generate / Refresh AI Brief", disabled=True)
         if not live_ai_enabled:
             st.info(
-                "Live AI generation is disabled for this demo, so viewers cannot "
-                "spend API credits by clicking the button. The approved AI brief "
-                "below remains available. To enable live generation in a controlled "
-                f"environment, set `{LIVE_AI_FLAG}=true` and provide `OPENAI_API_KEY`."
+                "Live AI generation is disabled for this public demo, so viewers cannot spend API credits. "
+                "The approved brief remains available. Admins can enable live generation in a controlled environment."
             )
         else:
             st.info(
-                "OpenAI API key is not configured for this environment. For local use, "
-                "set `OPENAI_API_KEY`; for Streamlit Cloud, add it in app secrets. "
-                "The approved demo brief remains available without calling the API."
+                "No AI provider key is configured for this environment. "
+                "The approved demo brief remains available without calling live AI."
             )
 
     if generate_clicked:
@@ -242,103 +223,78 @@ with tab3:
             with st.spinner("Generating a new AI insight brief from computed outputs..."):
                 refreshed_payload = load_json(INPUT_PATH)
                 if not refreshed_payload:
-                    raise RuntimeError(
-                        "Structured input is missing. Run `python src/prepare_insight_inputs.py` first."
-                    )
+                    raise RuntimeError("Structured evidence is missing. Refresh SmartCart outputs first.")
                 new_brief = call_openai(refreshed_payload, model_name.strip() or "gpt-4.1-mini")
                 LLM_BRIEF_PATH.write_text(new_brief + "\n", encoding="utf-8")
                 passed, warnings = validate_brief(new_brief, refreshed_payload)
-                write_validation(
-                    VALIDATION_PATH,
-                    passed,
-                    warnings,
-                    model_name.strip() or "gpt-4.1-mini",
-                )
+                write_validation(VALIDATION_PATH, passed, warnings, model_name.strip() or "gpt-4.1-mini")
                 APPROVED_PATH.unlink(missing_ok=True)
 
-            st.success(
-                "New AI brief generated. Review the validation report and approve it "
-                "before publishing it on the Insight Brief tab."
-            )
+            st.success("New AI brief generated. Review the evidence check and approve it before publishing.")
             st.rerun()
         except Exception as exc:
             st.error(f"Unable to generate AI brief: {exc}")
 
     st.divider()
-
-    st.subheader("Generation Guardrails")
+    st.subheader("Review Rules")
     guardrails = payload.get("generation_requirements", {})
     if guardrails:
-        st.json(guardrails)
-    else:
-        st.info("No machine-readable guardrails found in the structured input.")
-
-    st.subheader("Validation Report")
-    if validation_text:
-        st.success(
-            "Automated validation report is available. Confirmed warnings are "
-            "documented before the LLM brief is shown as approved."
+        st.markdown(
+            "- Use only numbers already produced by SmartCart.\n"
+            "- Include one clear action for every customer group.\n"
+            "- Avoid causal claims from observational comparisons.\n"
+            "- Do not expose customer-level identifiers."
         )
-        with st.expander("View validation report"):
+        with st.expander("Advanced: machine-readable rules"):
+            st.json(guardrails)
+    else:
+        st.info("No review rules were found in the structured evidence file.")
+
+    st.subheader("Evidence Check")
+    if validation_text:
+        st.success("Automated evidence checks are available. Confirmed warnings are documented before approval.")
+        with st.expander("Advanced: view evidence-check report"):
             st.markdown(validation_text)
     else:
-        st.warning(
-            "`reports/ai_insight_brief_llm_validation.md` is missing. Re-run "
-            "`python src/generate_insight_brief_llm.py` before approving the LLM brief."
-        )
+        st.warning("The evidence-check report is missing. Regenerate the AI brief before approving it.")
 
     st.divider()
-
-    st.info(
-        "**Approval must be done locally and committed to git.** "
-        "Approvals made on Streamlit Cloud are written to the running container only "
-        "and are lost on the next deploy. After approving, commit "
-        "`reports/ai_insight_brief_llm_approved.json` to the repository so the "
-        "audit trail is preserved."
-    )
+    with st.expander("Advanced: approval persistence note"):
+        st.info(
+            "Approvals made on Streamlit Cloud are written to the running container only and are lost on the next deploy. "
+            "For the submitted demo, approve locally and commit reports/ai_insight_brief_llm_approved.json to the repository."
+        )
 
     if not llm_brief_text:
-        st.info(
-            "No LLM brief found. Run `python src/generate_insight_brief_llm.py` "
-            "to generate one, then return here to approve it."
-        )
+        st.info("No AI-generated brief found yet. Generate one from the admin environment, then return here to approve it.")
     elif llm_approved:
         st.success(
-            f"LLM brief approved by **{approval.get('approved_by', '—')}** "
-            f"at {approval.get('approved_at', '—')} using model `{approval.get('model', '—')}`."
+            f"AI brief approved by **{approval.get('approved_by', '-')}** "
+            f"at {approval.get('approved_at', '-')} using model `{approval.get('model', '-')}`."
         )
-        if st.button("Revoke approval"):
+        if st.button("Revoke Approval"):
             APPROVED_PATH.unlink(missing_ok=True)
             st.rerun()
     else:
-        st.subheader("Human Review — LLM Brief")
-        st.markdown(
-            "Read the LLM brief carefully before approving. "
-            "Check every item below, then enter your name and click **Approve**."
-        )
+        st.subheader("Human Review")
+        st.markdown("Read the AI brief carefully before approving. Check every item below, then enter your name and click Approve.")
 
-        all_checked = all(
-            st.checkbox(item, key=f"check_{i}")
-            for i, item in enumerate(_REVIEW_CHECKLIST)
-        )
-
+        all_checked = all(st.checkbox(item, key=f"check_{i}") for i, item in enumerate(_REVIEW_CHECKLIST))
         reviewer = st.text_input("Your name (for the audit record)")
 
-        if st.button("Approve LLM brief", disabled=not (all_checked and reviewer.strip())):
+        if st.button("Approve AI Brief", disabled=not (all_checked and reviewer.strip())):
             approval_record = {
                 "approved": True,
                 "approved_by": reviewer.strip(),
                 "approved_at": datetime.now(timezone.utc).isoformat(),
                 "model": approval.get("model", "gpt-4.1-mini"),
             }
-            APPROVED_PATH.write_text(
-                json.dumps(approval_record, indent=2) + "\n", encoding="utf-8"
-            )
-            st.success("Brief approved. The LLM version will now appear on the Insight Brief tab.")
+            APPROVED_PATH.write_text(json.dumps(approval_record, indent=2) + "\n", encoding="utf-8")
+            st.success("Brief approved. The AI version will now appear on the Insight Brief tab.")
             st.rerun()
 
 st.divider()
 st.caption(
     "All numbers in the brief are traceable back to the underlying transaction data. "
-    "The brief should be reviewed by the team before sharing with stakeholders."
+    "A team member reviews the brief before it is used with stakeholders."
 )

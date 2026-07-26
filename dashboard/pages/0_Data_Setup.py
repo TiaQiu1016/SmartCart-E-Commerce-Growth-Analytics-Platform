@@ -1,5 +1,5 @@
 """
-Data Setup page — upload your CSV, validate columns, run the pipeline.
+Data Setup page  upload your CSV, validate columns, run the pipeline.
 
 This page lets any retailer onboard their transaction data without
 touching any Python code. Edit config.yaml to map your column names,
@@ -16,7 +16,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from utils import BLUE, ACCENT, CONFIG, CONFIG_PATH, ROOT, DB_PATH, render_sidebar
 
-st.set_page_config(page_title="Data Setup — SmartCart", layout="wide")
+st.set_page_config(page_title="Data Setup - SmartCart", layout="wide")
 
 st.markdown(
     f"""
@@ -35,19 +35,19 @@ st.markdown(
 
 render_sidebar()
 
-st.title("Data Setup")
+st.title("Connect Your Data")
 st.markdown(
-    "SmartCart works with any retailer's transaction data. "
-    "Follow the three steps below — no code changes required."
+    "SmartCart works with a retailer transaction export. "
+    "This setup page checks the file, confirms the column mapping, and refreshes demo outputs."
 )
 
 st.divider()
 
-# ── Step 1: Current config ────────────────────────────────────────────────────
-st.subheader("Step 1 — Configure your dataset")
+#  Step 1: Current config
+st.subheader("Step 1 - Confirm store settings")
 st.markdown(
-    f"Edit **`config.yaml`** in the project root to match your CSV's column names "
-    f"and company details. Current configuration:"
+    f"Review the store settings and column names SmartCart will use for this demo. "
+    f"For a production version, these settings would be managed through a guided setup form."
 )
 
 col_cfg, col_req = st.columns([1, 1])
@@ -55,12 +55,12 @@ col_cfg, col_req = st.columns([1, 1])
 with col_cfg:
     st.markdown("**Company settings**")
     company = CONFIG.get("company", {})
-    st.markdown(f"- Name: `{company.get('name', '—')}`")
-    st.markdown(f"- Currency: `{company.get('currency_symbol', '—')}`")
+    st.markdown(f"- Name: `{company.get('name', '')}`")
+    st.markdown(f"- Currency: `{company.get('currency_symbol', '')}`")
 
     data_cfg = CONFIG.get("data", {})
     st.markdown("**Data file**")
-    st.markdown(f"- Path: `{data_cfg.get('file', '—')}`")
+    st.markdown(f"- Path: `{data_cfg.get('file', '')}`")
     st.markdown(f"- Encoding: `{data_cfg.get('encoding', 'utf-8')}`")
 
     flt = CONFIG.get("filters", {})
@@ -69,26 +69,26 @@ with col_cfg:
     st.markdown(f"- Min price: `{flt.get('min_price', 0.0)}`")
 
 with col_req:
-    st.markdown("**Column mapping** (your CSV → SmartCart internal)")
+    st.markdown("**Column mapping** (your CSV -> SmartCart internal)")
     col_map = CONFIG.get("columns", {})
     mapping_df = pd.DataFrame(
         [{"SmartCart field": k, "Your CSV column": v} for k, v in col_map.items()]
     )
     st.dataframe(mapping_df, use_container_width=True, hide_index=True)
 
-with st.expander("Edit config.yaml"):
+with st.expander("Advanced: setup file"):
     if CONFIG_PATH.exists():
         raw_cfg = CONFIG_PATH.read_text()
         st.code(raw_cfg, language="yaml")
-        st.info("To change settings, edit `config.yaml` directly in a text editor and reload this page.")
+        st.info("For this demo, settings are stored in config.yaml. Admin users can edit it and reload the page.")
 
 st.divider()
 
-# ── Step 2: Upload and validate ───────────────────────────────────────────────
-st.subheader("Step 2 — Upload and validate your CSV")
+#  Step 2: Upload and validate
+st.subheader("Step 2 - Upload and check your CSV")
 st.markdown(
-    "Upload your transaction CSV to check that all required columns are present "
-    "and the data looks correct before running the pipeline."
+    "Upload a transaction CSV to check that required columns are present "
+    "and the data looks ready before SmartCart refreshes the outputs."
 )
 
 uploaded = st.file_uploader("Upload transaction CSV", type=["csv"])
@@ -155,12 +155,12 @@ if uploaded:
 
 st.divider()
 
-# ── Step 3: Run the pipeline ──────────────────────────────────────────────────
-st.subheader("Step 3 — Run the analytics pipeline")
+#  Step 3: Run the pipeline
+st.subheader("Step 3 - Refresh SmartCart outputs")
 st.markdown(
-    "Click **Run Pipeline** to process your data end-to-end. "
-    "This runs `build_database.py` (loads + cleans data, builds RFM). "
-    "The remaining model scripts can be run from the terminal."
+    "Use this section when new transaction data has been added. "
+    "In this demo, the button rebuilds the cleaned transaction database; "
+    "the full model refresh is run by an admin from the backend pipeline."
 )
 
 data_file = ROOT / CONFIG.get("data", {}).get("file", "data/online_retail_II.csv")
@@ -179,12 +179,12 @@ pipeline_scripts = [
     ("group_comparison.py",  "Statistical group comparisons"),
 ]
 
-st.markdown("**Full pipeline run order** (or use the button to run Step 1 automatically):")
+st.markdown("**Admin run order**")
 steps_df = pd.DataFrame(pipeline_scripts, columns=["Script", "Description"])
 steps_df.index = steps_df.index + 1
 st.dataframe(steps_df, use_container_width=True)
 
-if st.button("Run build_database.py", disabled=not file_exists, type="primary"):
+if st.button("Build Transaction Database", disabled=not file_exists, type="primary"):
     with st.spinner("Running build_database.py..."):
         result = subprocess.run(
             [sys.executable, str(ROOT / "src" / "build_database.py")],
@@ -205,8 +205,9 @@ if st.button("Run build_database.py", disabled=not file_exists, type="primary"):
         st.code(result.stderr, language="text")
 
 st.divider()
-st.markdown("**Terminal commands** (copy-paste to run the full pipeline):")
-st.code(
-    "\n".join([f"python src/{s}" for s, _ in pipeline_scripts]),
-    language="bash"
-)
+with st.expander("Advanced: backend commands"):
+    st.markdown("Admin users can run the full refresh in this order:")
+    st.code(
+        "\n".join([f"python src/{s}" for s, _ in pipeline_scripts]),
+        language="bash"
+    )

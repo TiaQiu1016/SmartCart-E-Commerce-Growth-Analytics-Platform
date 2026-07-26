@@ -61,7 +61,7 @@ try:
     rules = load_association_rules()
     recs = load_recommendations()
 except Exception:
-    st.error("Product recommendation tables are not available yet. Run `python src/market_basket.py` before opening this page.")
+    st.error("Product recommendation tables are not available yet. Ask an admin to refresh SmartCart outputs before opening this page.")
     st.stop()
 
 desc_map = {str(row["stock_code"]): row["description"] for _, row in recs.iterrows()}

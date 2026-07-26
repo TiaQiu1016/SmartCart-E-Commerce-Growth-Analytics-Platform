@@ -1,5 +1,5 @@
 """
-SmartCart — AI-Powered E-Commerce Growth Analytics Dashboard
+SmartCart - AI-Powered E-Commerce Growth Analytics Dashboard
 Overview / landing page.
 Usage: streamlit run dashboard/app.py
 """
@@ -27,7 +27,7 @@ from utils import (
 
 st.set_page_config(
     page_title="SmartCart Analytics",
-    page_icon="🛒",
+    page_icon="SC",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -53,7 +53,7 @@ st.markdown(
 
 render_sidebar()
 
-# ── data ─────────────────────────────────────────────────────────────────────
+#  data
 summary = load_transactions_summary()
 segments = load_segments()
 clv = load_clv()
@@ -63,25 +63,30 @@ seg_summary = load_segment_summary()
 repeat_pct = 100 * summary["repeat_customers"] / summary["n_customers"]
 avg_clv = clv["clv_estimate"].mean()
 
-# ── header ────────────────────────────────────────────────────────────────────
-st.markdown(f"# SmartCart Growth Analytics")
+#  header
+st.markdown(f"# SmartCart Retail Growth Dashboard")
 st.markdown(
-    "Turn transaction data into segmentation, lifetime value, churn signals, "
-    "product recommendations, and group insights — all from a single database."
+    "See which customers to protect, win back, or encourage to buy again. "
+    "SmartCart turns transaction history into customer groups, value signals, "
+    "churn risk, and product recommendations."
 )
 st.divider()
 
-# ── KPI row ───────────────────────────────────────────────────────────────────
+#  KPI row
 k1, k2, k3, k4, k5 = st.columns(5)
 k1.metric("Total Customers", f"{summary['n_customers']:,}")
 k2.metric("Total Revenue", f"{CURRENCY}{summary['total_revenue']/1_000_000:.1f}M")
 k3.metric("Total Invoices", f"{summary['n_invoices']:,}")
 k4.metric("Repeat Customer Rate", f"{repeat_pct:.1f}%")
-k5.metric("Avg Baseline CLV", f"{CURRENCY}{avg_clv:,.0f}", help="RFM-based baseline estimate. See Segmentation page for BG/NBD CLV.")
+k5.metric(
+    "Avg Customer Value",
+    f"{CURRENCY}{avg_clv:,.0f}",
+    help="Estimated value based on purchase history. See Customer Segmentation for the enhanced value estimate.",
+)
 
 st.divider()
 
-# ── charts row ───────────────────────────────────────────────────────────────
+#  charts row
 col_left, col_right = st.columns([1, 1])
 
 with col_left:
@@ -123,7 +128,7 @@ with col_right:
     fig_rev.update_layout(**PLOTLY_LAYOUT, showlegend=False)
     st.plotly_chart(fig_rev, use_container_width=True)
 
-# ── segment summary table ─────────────────────────────────────────────────────
+#  segment summary table
 st.subheader("Segment At-a-Glance")
 
 display_cols = {
@@ -149,6 +154,6 @@ st.dataframe(tbl, use_container_width=True, hide_index=True)
 
 st.divider()
 st.caption(
-    "Data: Online Retail II (UCI / Kaggle, CC BY 4.0) · Dec 2009 – Dec 2011 · "
-    "805,549 cleaned transactions · BUSA 649, McGill Desautels MMA"
+    "Demo data: Online Retail II sample transactions, Dec 2009-Dec 2011. "
+    "In production, connect a retailer's own transaction export from Data Setup."
 )

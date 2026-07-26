@@ -1,5 +1,5 @@
 """
-Segmentation page — RFM K-Means segments, CLV, recommended actions.
+Segmentation page  RFM K-Means segments, CLV, recommended actions.
 """
 
 import sys
@@ -24,7 +24,7 @@ from utils import (
     render_sidebar,
 )
 
-st.set_page_config(page_title="Segmentation — SmartCart", layout="wide")
+st.set_page_config(page_title="Customer Groups - SmartCart", layout="wide")
 
 st.markdown(
     f"""
@@ -48,13 +48,13 @@ st.markdown(
 
 render_sidebar()
 
-st.title("Customer Segmentation")
+st.title("Customer Groups")
 st.markdown(
-    "Customers are grouped into 4 segments based on how recently, how often, and how much they buy. "
-    "Each segment comes with a data-backed recommended action."
+    "SmartCart groups customers by shopping behavior so a retailer can decide who to protect, "
+    "who to re-engage, and who to grow. Each group includes one recommended action backed by data."
 )
 
-# ── data ──────────────────────────────────────────────────────────────────────
+#  data
 segments = load_segments()
 clv = load_clv()
 profiles = load_segment_profiles()
@@ -73,7 +73,7 @@ clv_by_seg = (
     .sort_values("clv_estimate", ascending=False)
 )
 
-# ── KPI row ───────────────────────────────────────────────────────────────────
+#  KPI row
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Total Customers", f"{len(segments):,}")
 k2.metric("Segments", "4")
@@ -85,7 +85,7 @@ k4.metric(
 
 st.divider()
 
-# ── two bar charts ────────────────────────────────────────────────────────────
+#  two bar charts
 col1, col2 = st.columns(2)
 
 with col1:
@@ -103,7 +103,7 @@ with col1:
     st.plotly_chart(fig1, use_container_width=True)
 
 with col2:
-    st.subheader("Average CLV by Segment")
+    st.subheader("Average Customer Value by Group")
     fig2 = px.bar(
         clv_by_seg,
         x="segment",
@@ -115,12 +115,12 @@ with col2:
     fig2.update_layout(**PLOTLY_LAYOUT, xaxis_title=None, yaxis_title=f"Avg CLV ({CURRENCY})")
     st.plotly_chart(fig2, use_container_width=True)
 
-# ── Silhouette score — k selection validation ─────────────────────────────────
-st.subheader("How We Chose 4 Segments")
+#  Silhouette score  k selection validation
+st.subheader("Why SmartCart Uses 4 Customer Groups")
 st.markdown(
-    "We tested 4 to 8 segments and picked the number with the highest **silhouette score** — "
-    "a measure of how well-separated and internally consistent the groups are "
-    "(higher is better; above 0.25 is considered meaningful)."
+    "We tested several grouping options and kept the one that created the clearest customer profiles. "
+    "This score is a quality check for how clearly separated the groups are "
+    "(higher means clearer customer profiles)."
 )
 
 sil_col1, sil_col2 = st.columns([2, 1])
@@ -139,7 +139,7 @@ with sil_col1:
     fig_sil.add_annotation(
         x=metrics["k"].max(),
         y=0.25,
-        text="0.25 — meaningful threshold",
+        text="0.25 - meaningful threshold",
         showarrow=False,
         yshift=10,
         xanchor="right",
@@ -154,17 +154,19 @@ with sil_col1:
 
 with sil_col2:
     best = metrics.loc[metrics["silhouette_score"].idxmax()]
-    st.metric("Chosen segments (k)", int(best["k"]))
-    st.metric("Silhouette score", f"{best['silhouette_score']:.3f}")
+    st.metric("Selected Groups", int(best["k"]))
+    st.metric("Group Separation Score", f"{best['silhouette_score']:.3f}")
     st.caption(
-        "k=4 has the highest silhouette score across all tested values, "
-        "meaning the 4-segment solution produces the most distinct and internally "
-        "consistent customer groups. The highlighted bar (orange) marks the chosen k."
+        "Four groups produced the clearest customer profiles while staying simple "
+        "enough for a retailer to act on."
     )
 
-# ── RFM scatter ────────────────────────────────────────────────────────────────
-st.subheader("RFM Scatter — Frequency vs. Recency")
-st.markdown("Each point is a customer. Bubble size = total revenue.")
+#  RFM scatter
+st.subheader("Customer Activity Map")
+st.markdown(
+    "Each point is a customer. Farther right means longer since last purchase; "
+    "higher means more orders. Bubble size shows total customer revenue."
+)
 
 palette = {
     "Champions": BLUE,
@@ -194,8 +196,8 @@ fig3 = px.scatter(
 fig3.update_layout(**PLOTLY_LAYOUT)
 st.plotly_chart(fig3, use_container_width=True)
 
-# ── RFM box plots ─────────────────────────────────────────────────────────────
-st.subheader("RFM Distribution by Segment")
+#  RFM box plots
+st.subheader("Behavior by Customer Group")
 metric_choice = st.selectbox(
     "Select metric", ["recency_days", "frequency", "monetary"],
     format_func=lambda x: {"recency_days": "Recency (days)", "frequency": "Order Frequency", "monetary": f"Revenue ({CURRENCY})"}[x],
@@ -211,15 +213,13 @@ fig4 = px.box(
 fig4.update_layout(**PLOTLY_LAYOUT, showlegend=False, xaxis_title=None)
 st.plotly_chart(fig4, use_container_width=True)
 
-# ── BG/NBD vs Baseline CLV comparison ────────────────────────────────────────
+#  BG/NBD vs Baseline CLV comparison
 if has_bgnbd:
-    st.subheader("CLV: Baseline vs. BG/NBD Probabilistic Model")
+    st.subheader("Customer Value: Simple vs. Enhanced Estimate")
     st.markdown(
-        "The **baseline CLV** uses avg order value × annual order rate × recency decay. "
-        "The **BG/NBD CLV** uses a probabilistic model (BG/NBD for purchase timing, "
-        "Gamma-Gamma for monetary value per transaction). "
-        "The prediction unit is **active purchase weeks** over 12 months — "
-        "same-week orders are collapsed since the model runs at weekly frequency."
+        "The simple estimate gives a quick value benchmark from past purchases. "
+        "The enhanced estimate looks at repeat-purchase patterns to estimate expected "
+        "12-month customer value. Technical model details are available in the methodology notes."
     )
 
     import plotly.graph_objects as go
@@ -276,7 +276,7 @@ if has_bgnbd:
     n_total = len(clv_bgnbd)
     st.info(
         f"**P(Alive) note:** {n_insufficient:,} of {n_total:,} customers ({100*n_insufficient/n_total:.0f}%) "
-        f"have no repeat purchase history. BG/NBD assigns p_alive=1.0 to these customers by design — "
+        f"have no repeat purchase history. BG/NBD assigns p_alive=1.0 to these customers by design  "
         f"the model has no evidence of churn without a repeat-purchase window. "
         f"This inflates segment-level P(Alive) averages (especially Hibernating, where ~70% are one-time buyers). "
         f"Interpret P(Alive) for repeat customers only."
@@ -294,7 +294,7 @@ if has_bgnbd:
 
 st.divider()
 
-# ── Recommended actions ───────────────────────────────────────────────────────
+#  Recommended actions
 st.subheader("Data-Backed Recommended Actions")
 st.markdown("One action per segment, derived from the segment's RFM profile.")
 
@@ -303,15 +303,15 @@ for _, row in profiles.sort_values("customers", ascending=False).iterrows():
         f"""
         <div class="action-card">
             <strong style="color:{BLUE}">{row['segment']}</strong>
-            &nbsp;·&nbsp; {int(row['customers']):,} customers
-            &nbsp;·&nbsp; Avg CLV: {CURRENCY}{row['monetary']:.0f}
+            &nbsp;-&nbsp; {int(row['customers']):,} customers
+            &nbsp;-&nbsp; Avg Revenue: {CURRENCY}{row['monetary']:.0f}
             <br/><span style="color:#444">{row['recommended_action']}</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-# ── detailed profile table ────────────────────────────────────────────────────
+#  detailed profile table
 st.subheader("Segment Profile Detail")
 disp = profiles[["segment", "customers", "recency_days", "frequency", "monetary"]].copy()
 disp.columns = ["Segment", "Customers", "Avg Recency (days)", "Avg Orders", f"Avg Revenue ({CURRENCY})"]

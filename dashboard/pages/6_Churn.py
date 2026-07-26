@@ -56,10 +56,7 @@ st.markdown(
 try:
     churn = load_churn_scores()
 except Exception as exc:
-    st.error(
-        "The `churn_scores` table is not available yet. Run "
-        "`python src/churn_model.py` before opening this page."
-    )
+    st.error("Churn-risk scores are not available yet. Ask an admin to refresh SmartCart outputs before opening this page.")
     st.caption(str(exc))
     st.stop()
 
@@ -117,11 +114,11 @@ k1, k2, k3, k4 = st.columns(4)
 k1.metric("Customers Scored", f"{len(full):,}")
 k2.metric("Went Quiet (Observed)", f"{went_quiet_pct:.1f}%", help="Share of customers who made no purchase in the 90-day window following the analysis cutoff")
 k3.metric("High-Risk Customers", f"{high_risk_n:,}", help=f"Customers with a predicted churn probability of {CHURN_HIGH:.0%} or higher")
-k4.metric("Predictive Accuracy", "80.0%", help="How often the model correctly identifies whether a customer will churn (AUC-based)")
+k4.metric("Model Quality", "80.0%", help="How well SmartCart separates customers likely to go quiet from those likely to keep buying")
 
 st.caption(
-    f"Risk bands: High = predicted churn probability ≥ {CHURN_HIGH:.0%}; "
-    f"Medium = {CHURN_MEDIUM:.0%}–{CHURN_HIGH:.0%}; Low = below {CHURN_MEDIUM:.0%}. "
+    f"Risk bands: High = predicted churn probability >= {CHURN_HIGH:.0%}; "
+    f"Medium = {CHURN_MEDIUM:.0%}-{CHURN_HIGH:.0%}; Low = below {CHURN_MEDIUM:.0%}. "
     f"Scores are based on purchase behavior through {cutoff}."
 )
 
@@ -130,7 +127,7 @@ st.divider()
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("Predicted Churn Score Distribution")
+    st.subheader("Churn Risk Score Distribution")
     fig_dist = px.histogram(
         test,
         x="predicted_churn_probability",
@@ -149,7 +146,7 @@ with col1:
     st.plotly_chart(fig_dist, use_container_width=True)
 
 with col2:
-    st.subheader("Actual Future Churn by Segment")
+    st.subheader("Future Inactivity by Customer Group")
     seg_churn = (
         test.dropna(subset=["segment"])
         .groupby("segment", as_index=False)
@@ -172,7 +169,7 @@ with col2:
     fig_seg.update_layout(**PLOTLY_LAYOUT, xaxis_title=None, yaxis_tickformat=".0%")
     st.plotly_chart(fig_seg, use_container_width=True)
 
-st.subheader("Predicted vs. Actual Churn by Segment")
+st.subheader("Predicted vs. Observed Inactivity by Group")
 compare = seg_churn.copy()
 compare_long = compare.melt(
     id_vars=["segment", "customers"],
@@ -205,7 +202,7 @@ st.plotly_chart(fig_compare, use_container_width=True)
 
 st.divider()
 
-st.subheader("High-Risk Customer List")
+st.subheader("Customers to Review First")
 st.markdown(
     "Operational list ranked by predicted churn probability. Use this for "
     "review and prioritization, not as an automated targeting rule."
@@ -255,10 +252,10 @@ top_customers["Actual Future Churn"] = top_customers["Actual Future Churn"].map(
     {1: "Yes", 0: "No"}
 )
 top_customers[f"Revenue ({CURRENCY})"] = top_customers[f"Revenue ({CURRENCY})"].map(
-    lambda v: f"{CURRENCY}{v:,.0f}" if v == v else ""
+    lambda v: f"{CURRENCY}{v:,.0f}" if v == v else "-"
 )
 top_customers[f"CLV ({CURRENCY})"] = top_customers[f"CLV ({CURRENCY})"].map(
-    lambda v: f"{CURRENCY}{v:,.0f}" if v == v else ""
+    lambda v: f"{CURRENCY}{v:,.0f}" if v == v else "-"
 )
 
 st.dataframe(top_customers, use_container_width=True, hide_index=True)

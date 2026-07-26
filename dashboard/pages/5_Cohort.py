@@ -1,5 +1,5 @@
 """
-Cohort Retention page — monthly customer retention and revenue by acquisition cohort.
+Cohort Retention page  monthly customer retention and revenue by acquisition cohort.
 """
 
 import sys
@@ -22,7 +22,7 @@ from utils import (
     render_sidebar,
 )
 
-st.set_page_config(page_title="Cohort Retention — SmartCart", layout="wide")
+st.set_page_config(page_title="Cohort Retention  SmartCart", layout="wide")
 
 st.markdown(
     f"""
@@ -36,38 +36,38 @@ st.markdown(
 
 render_sidebar()
 
-st.title("Cohort Retention Analysis")
+st.title("Customer Retention Over Time")
 st.markdown(
     "Customers are grouped by the **month they first purchased** (acquisition cohort). "
-    "Each cell shows what percentage of that cohort was still active — "
-    "made at least one purchase — in each subsequent month. "
+    "Each cell shows what percentage of that cohort was still active  "
+    "made at least one purchase  in each subsequent month. "
     "Month 0 is always 100% (the first purchase month itself)."
 )
 
-# ── data ──────────────────────────────────────────────────────────────────────
+#  data
 try:
     retention = load_cohort_retention()
     revenue = load_cohort_revenue()
 except Exception:
-    st.error("Cohort tables are not available yet. Run `python src/cohort_analysis.py` before opening this page.")
+    st.error("Retention tables are not available yet. Ask an admin to refresh SmartCart outputs before opening this page.")
     st.stop()
 
-# ── KPI row ───────────────────────────────────────────────────────────────────
+#  KPI row
 m1 = retention[retention["period"] == 1]["retention_rate"].mean()
 m3 = retention[retention["period"] == 3]["retention_rate"].mean()
 m6 = retention[retention["period"] == 6]["retention_rate"].mean()
 avg_cohort_size = retention[retention["period"] == 0]["cohort_size"].mean()
 
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Avg Cohort Size", f"{avg_cohort_size:,.0f} customers")
+k1.metric("Avg New-Customer Group Size", f"{avg_cohort_size:,.0f} customers")
 k2.metric("Avg Month-1 Retention", f"{m1:.1%}", help="Share still buying one month after acquisition")
 k3.metric("Avg Month-3 Retention", f"{m3:.1%}")
 k4.metric("Avg Month-6 Retention", f"{m6:.1%}")
 
 st.divider()
 
-# ── retention heatmap ─────────────────────────────────────────────────────────
-st.subheader("Retention Heatmap")
+#  retention heatmap
+st.subheader("Retention by First-Purchase Month")
 st.markdown(
     "Each row is an acquisition cohort. Each column is months since first purchase. "
     "**Darker = higher retention.** Grey cells = cohort not old enough to have reached that period yet."
@@ -82,7 +82,7 @@ pivot = (
 )
 
 # Build text annotations
-text_vals = pivot.map(lambda v: f"{v:.0%}" if pd.notna(v) else "")
+text_vals = pivot.map(lambda v: f"{v:.0%}" if pd.notna(v) else "-")
 
 fig_heat = go.Figure(
     go.Heatmap(
@@ -109,8 +109,8 @@ st.plotly_chart(fig_heat, use_container_width=True)
 
 st.divider()
 
-# ── retention curves ──────────────────────────────────────────────────────────
-st.subheader("Retention Curves by Cohort")
+#  retention curves
+st.subheader("Retention Trend by Customer Group")
 st.markdown(
     "How each cohort's retention evolves over time. "
     "Select specific cohorts to compare, or view all."
@@ -177,8 +177,8 @@ st.plotly_chart(fig_line, use_container_width=True)
 
 st.divider()
 
-# ── cohort revenue ────────────────────────────────────────────────────────────
-st.subheader("Revenue per Customer by Cohort")
+#  cohort revenue
+st.subheader("Revenue per Customer Over Time")
 st.markdown(
     "Average revenue generated per cohort customer in each month. "
     "High early-period revenue indicates strong initial basket size; "
@@ -209,6 +209,6 @@ st.plotly_chart(fig_rev, use_container_width=True)
 
 st.divider()
 st.caption(
-    f"25 monthly acquisition cohorts · Dec 2009 – Dec 2011 · "
-    f"Avg month-1 retention: {m1:.1%} · Avg month-6 retention: {m6:.1%}"
+    f"25 monthly acquisition cohorts  Dec 2009  Dec 2011  "
+    f"Avg month-1 retention: {m1:.1%}  Avg month-6 retention: {m6:.1%}"
 )
