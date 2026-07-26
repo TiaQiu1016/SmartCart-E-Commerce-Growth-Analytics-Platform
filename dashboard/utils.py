@@ -83,7 +83,7 @@ def render_sidebar() -> None:
         if COURSE_LABEL:
             st.caption(COURSE_LABEL)
         st.divider()
-        st.caption("Pages: Overview · Segmentation · Propensity · Market Basket · Group Insights · Cohort · Churn Risk")
+        st.caption("Pages: Overview · Segmentation · Propensity · Market Basket · Group Insights · Cohort · Churn Risk · AI Brief")
 
 
 PLOTLY_LAYOUT = dict(

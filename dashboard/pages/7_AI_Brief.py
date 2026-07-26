@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 BRIEF_PATH = ROOT / "reports" / "ai_insight_brief_draft.md"
 LLM_BRIEF_PATH = ROOT / "reports" / "ai_insight_brief_llm.md"
 APPROVED_PATH = ROOT / "reports" / "ai_insight_brief_llm_approved.json"
+VALIDATION_PATH = ROOT / "reports" / "ai_insight_brief_llm_validation.md"
 INPUT_PATH = ROOT / "data" / "insight_inputs.json"
 
 _REVIEW_CHECKLIST = [
@@ -70,6 +71,7 @@ payload = load_json(INPUT_PATH)
 approval = load_json(APPROVED_PATH)
 llm_brief_text = LLM_BRIEF_PATH.read_text(encoding="utf-8") if LLM_BRIEF_PATH.exists() else ""
 deterministic_text = BRIEF_PATH.read_text(encoding="utf-8") if BRIEF_PATH.exists() else ""
+validation_text = VALIDATION_PATH.read_text(encoding="utf-8") if VALIDATION_PATH.exists() else ""
 llm_approved = bool(approval.get("approved"))
 
 # Determine which brief to surface
@@ -166,6 +168,20 @@ with tab3:
         st.json(guardrails)
     else:
         st.info("No machine-readable guardrails found in the structured input.")
+
+    st.subheader("Validation Report")
+    if validation_text:
+        st.success(
+            "Automated validation report is available. Confirmed warnings are "
+            "documented before the LLM brief is shown as approved."
+        )
+        with st.expander("View validation report"):
+            st.markdown(validation_text)
+    else:
+        st.warning(
+            "`reports/ai_insight_brief_llm_validation.md` is missing. Re-run "
+            "`python src/generate_insight_brief_llm.py` before approving the LLM brief."
+        )
 
     st.divider()
 
