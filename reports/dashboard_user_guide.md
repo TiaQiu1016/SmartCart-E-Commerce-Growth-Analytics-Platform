@@ -159,9 +159,10 @@ must review the validation report, confirm that every number is traceable to
 `data/insight_inputs.json`, check that no causal claims are made, and approve the brief
 before it is shown as the final dashboard version.
 
-**If the button is disabled:** the current environment does not have an OpenAI API key
-configured. The already approved demo brief remains visible, but a new AI brief cannot be
-generated until `OPENAI_API_KEY` is added locally or through Streamlit secrets.
+**If the button is disabled:** live generation is off for the demo, or the current
+environment does not have an OpenAI API key configured. The already approved demo brief
+remains visible, but a new AI brief cannot be generated until `SMARTCART_ENABLE_LIVE_AI=true`
+and `OPENAI_API_KEY` are configured locally or through Streamlit secrets.
 
 ---
 

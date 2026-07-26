@@ -22,6 +22,7 @@ LLM_BRIEF_PATH = ROOT / "reports" / "ai_insight_brief_llm.md"
 APPROVED_PATH = ROOT / "reports" / "ai_insight_brief_llm_approved.json"
 VALIDATION_PATH = ROOT / "reports" / "ai_insight_brief_llm_validation.md"
 INPUT_PATH = ROOT / "data" / "insight_inputs.json"
+LIVE_AI_FLAG = "SMARTCART_ENABLE_LIVE_AI"
 
 _REVIEW_CHECKLIST = [
     "Every number in the brief matches `data/insight_inputs.json`",
@@ -95,6 +96,18 @@ def configure_api_key_from_secrets() -> bool:
     return False
 
 
+def live_generation_enabled() -> bool:
+    """Live API generation is opt-in so demo viewers cannot spend API credits."""
+    flag = os.getenv(LIVE_AI_FLAG, "").strip().lower()
+    if flag in {"1", "true", "yes", "on"}:
+        return True
+    try:
+        secret_flag = str(st.secrets.get(LIVE_AI_FLAG, "")).strip().lower()
+    except Exception:
+        secret_flag = ""
+    return secret_flag in {"1", "true", "yes", "on"}
+
+
 payload = load_json(INPUT_PATH)
 approval = load_json(APPROVED_PATH)
 llm_brief_text = LLM_BRIEF_PATH.read_text(encoding="utf-8") if LLM_BRIEF_PATH.exists() else ""
@@ -102,6 +115,7 @@ deterministic_text = BRIEF_PATH.read_text(encoding="utf-8") if BRIEF_PATH.exists
 validation_text = VALIDATION_PATH.read_text(encoding="utf-8") if VALIDATION_PATH.exists() else ""
 llm_approved = bool(approval.get("approved"))
 api_key_available = configure_api_key_from_secrets()
+live_ai_enabled = live_generation_enabled()
 
 # Determine which brief to surface
 if llm_brief_text and llm_approved:
@@ -203,15 +217,23 @@ with tab3:
     )
 
     model_name = st.text_input("Model", value=approval.get("model", "gpt-4.1-mini"))
-    if api_key_available:
+    if api_key_available and live_ai_enabled:
         generate_clicked = st.button("Generate / Refresh AI Brief")
     else:
         generate_clicked = st.button("Generate / Refresh AI Brief", disabled=True)
-        st.info(
-            "OpenAI API key is not configured for this environment. For local use, "
-            "set `OPENAI_API_KEY`; for Streamlit Cloud, add it in app secrets. "
-            "The approved demo brief remains available without calling the API."
-        )
+        if not live_ai_enabled:
+            st.info(
+                "Live AI generation is disabled for this demo, so viewers cannot "
+                "spend API credits by clicking the button. The approved AI brief "
+                "below remains available. To enable live generation in a controlled "
+                f"environment, set `{LIVE_AI_FLAG}=true` and provide `OPENAI_API_KEY`."
+            )
+        else:
+            st.info(
+                "OpenAI API key is not configured for this environment. For local use, "
+                "set `OPENAI_API_KEY`; for Streamlit Cloud, add it in app secrets. "
+                "The approved demo brief remains available without calling the API."
+            )
 
     if generate_clicked:
         try:
