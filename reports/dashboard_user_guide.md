@@ -64,7 +64,7 @@ the model, not a meaningful signal. The info box on the page explains this.
 
 ---
 
-## Page 2 — Propensity Scoring
+## Page 2 — Purchase Likelihood
 
 **What it does:** Scores every customer from 0 to 1 on the probability they will make a
 purchase in the next 30 days. Built with an XGBoost model (test AUC: 0.787).
@@ -140,6 +140,46 @@ to quickly compare average revenue, CLV, inactive rate, and UK share across segm
 **Important note:** these are observational comparisons of historical data, not randomized
 experiments. A statistically significant difference between groups tells you the groups are
 distinct — it does not prove that geography or segment membership *caused* the difference.
+
+---
+
+## Page 5 — Cohort
+
+**What it does:** Groups customers by the month of their first purchase (their acquisition
+cohort) and tracks what share of each cohort is still buying in each month afterward. This
+is a lifecycle view, not a per-customer prediction.
+
+**How to read the heatmap:** each row is a cohort, each column is months since acquisition.
+Darker cells mean higher retention. Cells fade to grey for later cohorts simply because they
+have not had time to reach that many months yet, that is expected, not missing data.
+
+**Revenue view:** the companion chart shows average revenue per original cohort member in
+each period, so you can see whether the customers who stick around are also staying valuable,
+not just active.
+
+**Use it to:** spot whether retention is structurally improving or declining across
+acquisition periods. It complements the individual-level Churn Risk score on the next page
+by showing the trend across cohorts rather than a snapshot of any one customer.
+
+---
+
+## Page 6 — Churn Risk
+
+**What it does:** Scores every customer's probability of making no purchase in the next 90
+days, using a leakage-free XGBoost model (test AUC 0.80 on a held-out set). This is a genuine
+forward-looking prediction, not the same thing as the "inactive rate" shown on the Group
+Insights page, which is only a historical snapshot.
+
+**Risk bands:** customers are bucketed into High, Medium, and Low risk. The probability
+cutoffs for each band are set in `config.yaml`, so a retailer can tune what "high risk" means
+for their own business without touching any code.
+
+**High-Risk Customer List:** ranked by predicted probability. Use this as an operational
+worklist for a retention team, contact the top of the list first.
+
+**What it does not do:** the model uses transaction history only. It cannot see whether a
+customer opened an email or visited the website recently; those signals would sharpen the
+score further in a production deployment.
 
 ---
 
