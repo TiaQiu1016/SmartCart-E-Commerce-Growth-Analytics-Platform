@@ -6,6 +6,7 @@ import sqlite3
 import pandas as pd
 import streamlit as st
 import yaml
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 _deploy_db = ROOT / "data" / "smartcart_deploy.db"
@@ -15,6 +16,9 @@ CONFIG_PATH = ROOT / "config.yaml"
 
 BLUE = "#234A70"
 ACCENT = "#E08A3C"
+
+LOGO_ICON_PATH = ROOT / "docs" / "branding" / "smartcart_icon_transparent.png"
+LOGO_ICON = Image.open(LOGO_ICON_PATH) if LOGO_ICON_PATH.exists() else "🛒"
 
 
 def _read_config() -> dict:

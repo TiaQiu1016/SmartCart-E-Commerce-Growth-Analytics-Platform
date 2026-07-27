@@ -16,6 +16,8 @@ from utils import (
     ACCENT,
     BLUE,
     CURRENCY,
+    LOGO_ICON,
+    LOGO_ICON_PATH,
     PLOTLY_LAYOUT,
     load_clv,
     load_segment_profiles,
@@ -27,7 +29,7 @@ from utils import (
 
 st.set_page_config(
     page_title="SmartCart Analytics",
-    page_icon="SC",
+    page_icon=LOGO_ICON,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -64,7 +66,12 @@ repeat_pct = 100 * summary["repeat_customers"] / summary["n_customers"]
 avg_clv = clv["clv_estimate"].mean()
 
 #  header
-st.markdown(f"# SmartCart Retail Growth Dashboard")
+col_logo, col_title = st.columns([1, 9])
+with col_logo:
+    if LOGO_ICON_PATH.exists():
+        st.image(str(LOGO_ICON_PATH), width=72)
+with col_title:
+    st.markdown("# SmartCart Retail Growth Dashboard")
 st.markdown(
     "See which customers to protect, win back, or encourage to buy again. "
     "SmartCart turns transaction history into customer groups, value signals, "

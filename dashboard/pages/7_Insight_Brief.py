@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 
-from utils import ACCENT, BLUE, render_sidebar
+from utils import LOGO_ICON, ACCENT, BLUE, render_sidebar
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
@@ -32,7 +32,7 @@ _REVIEW_CHECKLIST = [
     "No customer-level identifiers are exposed",
 ]
 
-st.set_page_config(page_title="Insight Brief - SmartCart", layout="wide")
+st.set_page_config(page_title="Insight Brief - SmartCart", page_icon=LOGO_ICON, layout="wide")
 
 st.markdown(
     f"""

@@ -13,6 +13,7 @@ import plotly.express as px
 import streamlit as st
 
 from utils import (
+    LOGO_ICON,
     ACCENT,
     BLUE,
     CHURN_HIGH,
@@ -26,7 +27,7 @@ from utils import (
     render_sidebar,
 )
 
-st.set_page_config(page_title="Churn Risk - SmartCart", layout="wide")
+st.set_page_config(page_title="Churn Risk - SmartCart", page_icon=LOGO_ICON, layout="wide")
 
 st.markdown(
     f"""

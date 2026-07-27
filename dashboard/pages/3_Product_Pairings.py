@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from utils import (
+    LOGO_ICON,
     ACCENT,
     BLUE,
     PLOTLY_LAYOUT,
@@ -20,7 +21,7 @@ from utils import (
     render_sidebar,
 )
 
-st.set_page_config(page_title="Product Pairings — SmartCart", layout="wide")
+st.set_page_config(page_title="Product Pairings — SmartCart", page_icon=LOGO_ICON, layout="wide")
 
 st.markdown(
     f"""

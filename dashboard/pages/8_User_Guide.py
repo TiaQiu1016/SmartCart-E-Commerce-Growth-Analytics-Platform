@@ -9,12 +9,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 
-from utils import ACCENT, BLUE, COMPANY_NAME, render_sidebar
+from utils import LOGO_ICON, ACCENT, BLUE, COMPANY_NAME, render_sidebar
 
 ROOT = Path(__file__).resolve().parents[2]
 FULL_GUIDE_PATH = ROOT / "reports" / "dashboard_user_guide.md"
 
-st.set_page_config(page_title="User Guide - SmartCart", layout="wide")
+st.set_page_config(page_title="User Guide - SmartCart", page_icon=LOGO_ICON, layout="wide")
 
 st.markdown(
     f"""

@@ -13,6 +13,7 @@ import streamlit as st
 import pandas as pd
 
 from utils import (
+    LOGO_ICON,
     ACCENT,
     BLUE,
     CURRENCY,
@@ -22,7 +23,7 @@ from utils import (
     render_sidebar,
 )
 
-st.set_page_config(page_title="Retention  SmartCart", layout="wide")
+st.set_page_config(page_title="Retention  SmartCart", page_icon=LOGO_ICON, layout="wide")
 
 st.markdown(
     f"""
