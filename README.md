@@ -11,6 +11,8 @@ customer segmentation, lifetime value, churn signals, product recommendations, a
 plain-language AI growth brief, as a free, open-source alternative to expensive enterprise
 analytics tools.
 
+**Live demo:** [smartcart-e-commerce-growth-analytics-platform-83ccy9znfbdzc39.streamlit.app](https://smartcart-e-commerce-growth-analytics-platform-83ccy9znfbdzc39.streamlit.app/)
+
 ## Modules
 
 | Module | Method | Dataset |
@@ -20,6 +22,7 @@ analytics tools.
 | Churn Prediction | Logistic Regression baseline + XGBoost (leakage-free time split: features before cutoff, label = no purchase in the following 90 days; AUC ≥ 0.75 on held-out test set) | Online Retail II |
 | Purchase-Propensity Prediction | Logistic Regression + XGBoost | Online Retail II |
 | Product Recommendation | Market-basket analysis (Apriori / association rules) | Online Retail II |
+| Cohort Retention Analysis | Monthly acquisition-cohort retention and revenue, plus a calendar-month breakdown that isolates seasonal patterns | Online Retail II |
 | Customer Group Comparison | t-tests / chi-square with effect sizes | Online Retail II |
 | AI Insight Brief | Reads computed module outputs and writes a plain-language brief through a deterministic fallback and an optional OpenAI API LLM path. Every cited number must trace back to model output, and one data-backed action is enforced per segment. | All module outputs |
 
@@ -41,7 +44,8 @@ sql/         # SQL scripts: schema, RFM aggregation, cohorts
 notebooks/   # exploration and modelling notebooks
 src/         # reusable Python modules
 dashboard/   # Streamlit app
-reports/     # progress reports and final technical report
+docs/        # logo assets and other project branding
+reports/     # progress reports, methodology docs, figures, and final technical report
 ```
 
 ## Setup
@@ -56,7 +60,7 @@ pip install -r requirements.txt
 Download Online Retail II from Kaggle
 (https://www.kaggle.com/datasets/mashlyn/online-retail-ii-uci) and place the file
 in `data/` (raw data is not committed). The default `config.yaml` is already configured
-for this dataset — no changes needed.
+for this dataset, no changes needed.
 
 ### Adapting SmartCart to your own data
 
@@ -99,11 +103,14 @@ modules but are not strictly required for segmentation and CLV.
 streamlit run dashboard/app.py
 ```
 
-Navigate to **Data Setup** in the sidebar. The page reads your `config.yaml`, lets you upload
+Navigate to **Connect Data** in the sidebar. The page reads your `config.yaml`, lets you upload
 your CSV, validates that all mapped columns are present, previews the cleaned data, and
 runs `build_database.py` with one click.
 
 **3. Or run the pipeline directly from the terminal** (see below).
+
+Once running, the dashboard's **User Guide** page has a page-by-page walkthrough written for a
+non-technical retailer, not just this README.
 
 ## Reproducing the Analysis
 
