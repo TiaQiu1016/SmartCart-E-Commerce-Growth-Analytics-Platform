@@ -13,6 +13,7 @@ import streamlit as st
 import pandas as pd
 
 from utils import (
+    LOGO_FAVICON,
     LOGO_ICON,
     ACCENT,
     BLUE,

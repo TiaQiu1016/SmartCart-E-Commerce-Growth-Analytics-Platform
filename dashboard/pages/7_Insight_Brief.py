@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 
-from utils import LOGO_ICON, ACCENT, BLUE, render_sidebar
+from utils import LOGO_FAVICON, LOGO_ICON, ACCENT, BLUE, render_sidebar
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))

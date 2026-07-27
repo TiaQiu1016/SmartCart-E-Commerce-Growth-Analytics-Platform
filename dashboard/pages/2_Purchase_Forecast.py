@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from utils import (
+    LOGO_FAVICON,
     LOGO_ICON,
     ACCENT,
     BLUE,

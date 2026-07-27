@@ -13,6 +13,7 @@ import plotly.express as px
 import streamlit as st
 
 from utils import (
+    LOGO_FAVICON,
     LOGO_ICON,
     ACCENT,
     BLUE,
