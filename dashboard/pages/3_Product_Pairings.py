@@ -1,5 +1,5 @@
 """
-Market Basket page — Apriori association rules and product recommendations.
+Product Pairings page — Apriori association rules and product recommendations.
 """
 
 import sys
@@ -20,7 +20,7 @@ from utils import (
     render_sidebar,
 )
 
-st.set_page_config(page_title="Market Basket — SmartCart", layout="wide")
+st.set_page_config(page_title="Product Pairings — SmartCart", layout="wide")
 
 st.markdown(
     f"""
@@ -240,3 +240,4 @@ st.caption(
     "Analysis based on 33,897 orders containing multiple products · 4,621 distinct products · "
     "82% of product pairs are stable across repeated sampling of the data."
 )
+

@@ -1,5 +1,5 @@
 """
-Cohort Retention page  monthly customer retention and revenue by acquisition cohort.
+Retention page  monthly customer retention and revenue by acquisition cohort.
 """
 
 import sys
@@ -22,7 +22,7 @@ from utils import (
     render_sidebar,
 )
 
-st.set_page_config(page_title="Cohort Retention  SmartCart", layout="wide")
+st.set_page_config(page_title="Retention  SmartCart", layout="wide")
 
 st.markdown(
     f"""
@@ -96,7 +96,7 @@ fig_heat = go.Figure(
         zmin=0,
         zmax=1,
         colorbar=dict(title="Retention", tickformat=".0%", thickness=14),
-        hovertemplate="Cohort: %{y}<br>Period: %{x}<br>Retention: %{z:.1%}<extra></extra>",
+        hovertemplate="Group: %{y}<br>Period: %{x}<br>Retention: %{z:.1%}<extra></extra>",
     )
 )
 fig_heat.update_layout(
@@ -212,3 +212,4 @@ st.caption(
     f"25 monthly acquisition cohorts  Dec 2009  Dec 2011  "
     f"Avg month-1 retention: {m1:.1%}  Avg month-6 retention: {m6:.1%}"
 )
+

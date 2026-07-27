@@ -81,7 +81,7 @@ k4.metric("Repeat Customer Rate", f"{repeat_pct:.1f}%")
 k5.metric(
     "Avg Customer Value",
     f"{CURRENCY}{avg_clv:,.0f}",
-    help="Estimated value based on purchase history. See Customer Segmentation for the enhanced value estimate.",
+    help="Estimated value based on purchase history. See Customer Groups for the enhanced value estimate.",
 )
 
 st.divider()
@@ -155,5 +155,5 @@ st.dataframe(tbl, use_container_width=True, hide_index=True)
 st.divider()
 st.caption(
     "Demo data: Online Retail II sample transactions, Dec 2009-Dec 2011. "
-    "In production, connect a retailer's own transaction export from Data Setup."
+    "In production, connect a retailer's own transaction export from Connect Data."
 )

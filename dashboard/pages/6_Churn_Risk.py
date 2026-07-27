@@ -266,3 +266,4 @@ st.caption(
     "and order patterns. Customers labeled 'Went Quiet' made no purchase in the 90 days "
     "following the analysis cutoff date."
 )
+

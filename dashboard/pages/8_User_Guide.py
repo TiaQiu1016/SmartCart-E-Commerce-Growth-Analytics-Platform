@@ -53,7 +53,7 @@ with c1:
         """
         <div class="guide-card">
         <h4>1. Check the data</h4>
-        Use <b>Data Setup</b> to confirm the transaction file, required columns,
+        Use <b>Connect Data</b> to confirm the transaction file, required columns,
         and cleaned preview before trusting the analytics.
         </div>
         """,
@@ -64,8 +64,8 @@ with c2:
         """
         <div class="guide-card">
         <h4>2. Review the customer story</h4>
-        Start with <b>Overview</b>, then use <b>Segmentation</b>, <b>Churn Risk</b>,
-        and <b>Purchase Likelihood</b> to decide who to prioritize.
+        Start with <b>Overview</b>, then use <b>Customer Groups</b>, <b>Churn Risk</b>,
+        and <b>Purchase Forecast</b> to decide who to prioritize.
         </div>
         """,
         unsafe_allow_html=True,
@@ -75,7 +75,7 @@ with c3:
         """
         <div class="guide-card">
         <h4>3. Turn insights into action</h4>
-        Use <b>Market Basket</b> for cross-sell ideas and <b>AI Insight Brief</b>
+        Use <b>Product Pairings</b> for cross-sell ideas and <b>Insight Brief</b>
         for a plain-language action summary.
         </div>
         """,
@@ -96,7 +96,7 @@ with st.expander("Overview", expanded=True):
         """
     )
 
-with st.expander("Data Setup"):
+with st.expander("Connect Data"):
     st.markdown(
         """
         Use this page when connecting a new retailer's CSV. Confirm the column
@@ -105,17 +105,17 @@ with st.expander("Data Setup"):
         """
     )
 
-with st.expander("Segmentation"):
+with st.expander("Customer Groups"):
     st.markdown(
         """
-        Segmentation groups customers into Champions, Recent / Promising,
+        Customer Groups divides customers into Champions, Recent / Promising,
         At Risk High-Value, and Hibernating. Each group has a recommended action.
         Use this page to decide which customer group needs retention, nurture,
         win-back, or low-cost reactivation.
         """
     )
 
-with st.expander("Purchase Likelihood"):
+with st.expander("Purchase Forecast"):
     st.markdown(
         """
         This page ranks customers by their probability of purchasing in the next
@@ -124,7 +124,7 @@ with st.expander("Purchase Likelihood"):
         """
     )
 
-with st.expander("Market Basket"):
+with st.expander("Product Pairings"):
     st.markdown(
         """
         This page identifies products that are commonly bought together. Use
@@ -143,10 +143,10 @@ with st.expander("Group Insights"):
         """
     )
 
-with st.expander("Cohort"):
+with st.expander("Retention"):
     st.markdown(
         """
-        Cohort views show how customers retained or generated revenue over time
+        Retention views show how customers retained or generated revenue over time
         based on when they first purchased. Use this page to understand whether
         customer retention is improving across acquisition cohorts.
         """
@@ -161,13 +161,13 @@ with st.expander("Churn Risk"):
         """
     )
 
-with st.expander("AI Insight Brief"):
+with st.expander("Insight Brief"):
     st.markdown(
         """
         The approved AI brief summarizes customer segments, churn signals, CLV,
         group differences, and product recommendations in plain language.
 
-        The **Generate / Refresh AI Brief** button is intentionally disabled in
+        The **Generate / Refresh Insight Brief** button is intentionally disabled in
         demo-safe mode unless live AI generation is explicitly enabled. Opening
         the dashboard does not call OpenAI or spend API credits.
         """
@@ -177,7 +177,7 @@ st.divider()
 
 st.subheader("Common Questions")
 
-with st.expander("Why is Generate / Refresh AI Brief disabled?"):
+with st.expander("Why is Generate / Refresh Insight Brief disabled?"):
     st.markdown(
         """
         Live generation is off in the public demo so viewers cannot accidentally

@@ -1,5 +1,5 @@
 """
-Data Setup page  upload your CSV, validate columns, run the pipeline.
+Connect Data page  upload your CSV, validate columns, run the pipeline.
 
 This page lets any retailer onboard their transaction data without
 touching any Python code. Edit config.yaml to map your column names,
@@ -16,7 +16,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from utils import BLUE, ACCENT, CONFIG, CONFIG_PATH, ROOT, DB_PATH, render_sidebar
 
-st.set_page_config(page_title="Data Setup - SmartCart", layout="wide")
+st.set_page_config(page_title="Connect Data - SmartCart", layout="wide")
 
 st.markdown(
     f"""
@@ -211,3 +211,4 @@ with st.expander("Advanced: backend commands"):
         "\n".join([f"python src/{s}" for s, _ in pipeline_scripts]),
         language="bash"
     )
+

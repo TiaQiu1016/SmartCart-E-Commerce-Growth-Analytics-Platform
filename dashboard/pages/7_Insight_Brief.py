@@ -1,5 +1,5 @@
 """
-AI Insight Brief page: reviewable business narrative from computed outputs.
+Insight Brief page: reviewable business narrative from computed outputs.
 """
 
 import json
@@ -32,7 +32,7 @@ _REVIEW_CHECKLIST = [
     "No customer-level identifiers are exposed",
 ]
 
-st.set_page_config(page_title="AI Insight Brief - SmartCart", layout="wide")
+st.set_page_config(page_title="Insight Brief - SmartCart", layout="wide")
 
 st.markdown(
     f"""
@@ -56,7 +56,7 @@ st.markdown(
 
 render_sidebar()
 
-st.title("AI Insight Brief")
+st.title("Insight Brief")
 st.markdown(
     "A plain-language summary of what the customer data is telling you: which groups need attention, "
     "where churn risk is highest, and which product pairings can support cross-sell campaigns. "
@@ -202,9 +202,9 @@ with tab3:
 
     model_name = st.text_input("Model", value=approval.get("model", "gpt-4.1-mini"))
     if api_key_available and live_ai_enabled:
-        generate_clicked = st.button("Generate / Refresh AI Brief")
+        generate_clicked = st.button("Generate / Refresh Insight Brief")
     else:
-        generate_clicked = st.button("Generate / Refresh AI Brief", disabled=True)
+        generate_clicked = st.button("Generate / Refresh Insight Brief", disabled=True)
         if not live_ai_enabled:
             st.info(
                 "Live AI generation is disabled for this public demo, so viewers cannot spend API credits. "
@@ -282,7 +282,7 @@ with tab3:
         all_checked = all(st.checkbox(item, key=f"check_{i}") for i, item in enumerate(_REVIEW_CHECKLIST))
         reviewer = st.text_input("Your name (for the audit record)")
 
-        if st.button("Approve AI Brief", disabled=not (all_checked and reviewer.strip())):
+        if st.button("Approve Insight Brief", disabled=not (all_checked and reviewer.strip())):
             approval_record = {
                 "approved": True,
                 "approved_by": reviewer.strip(),
@@ -298,3 +298,4 @@ st.caption(
     "All numbers in the brief are traceable back to the underlying transaction data. "
     "A team member reviews the brief before it is used with stakeholders."
 )
+

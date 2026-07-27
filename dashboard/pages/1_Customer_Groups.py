@@ -1,5 +1,5 @@
 """
-Segmentation page  RFM K-Means segments, CLV, recommended actions.
+Customer Groups page  RFM K-Means segments, CLV, recommended actions.
 """
 
 import sys
@@ -320,3 +320,4 @@ disp["Avg Recency (days)"] = disp["Avg Recency (days)"].map("{:.0f}".format)
 disp["Avg Orders"] = disp["Avg Orders"].map("{:.1f}".format)
 disp = disp.sort_values("Customers", ascending=False)
 st.dataframe(disp, use_container_width=True, hide_index=True)
+

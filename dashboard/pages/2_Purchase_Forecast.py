@@ -22,7 +22,7 @@ from utils import (
     render_sidebar,
 )
 
-st.set_page_config(page_title="Purchase Likelihood - SmartCart", layout="wide")
+st.set_page_config(page_title="Purchase Forecast - SmartCart", layout="wide")
 
 st.markdown(
     f"""
@@ -41,7 +41,7 @@ st.markdown(
 
 render_sidebar()
 
-st.title("Purchase Likelihood")
+st.title("Purchase Forecast")
 st.markdown(
     "Which customers are most likely to buy again in the next 30 days? "
     "SmartCart analyzes each customer's purchase history to score their likelihood of returning. "
@@ -190,3 +190,4 @@ st.caption(
     "Scores are based on each customer's past purchase recency, frequency, revenue, tenure, "
     "average basket size, and regularity of orders. 30-day likelihood horizon."
 )
+
