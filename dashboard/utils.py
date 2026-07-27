@@ -19,6 +19,7 @@ ACCENT = "#E08A3C"
 
 LOGO_ICON_PATH = ROOT / "docs" / "branding" / "smartcart_icon_transparent.png"
 LOGO_ICON = Image.open(LOGO_ICON_PATH) if LOGO_ICON_PATH.exists() else "🛒"
+LOGO_HORIZONTAL_PATH = ROOT / "docs" / "branding" / "smartcart_logo_horizontal.png"
 
 
 def _read_config() -> dict:

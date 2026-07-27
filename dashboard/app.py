@@ -16,8 +16,8 @@ from utils import (
     ACCENT,
     BLUE,
     CURRENCY,
+    LOGO_HORIZONTAL_PATH,
     LOGO_ICON,
-    LOGO_ICON_PATH,
     PLOTLY_LAYOUT,
     load_clv,
     load_segment_profiles,
@@ -66,11 +66,9 @@ repeat_pct = 100 * summary["repeat_customers"] / summary["n_customers"]
 avg_clv = clv["clv_estimate"].mean()
 
 #  header
-col_logo, col_title = st.columns([1, 9])
-with col_logo:
-    if LOGO_ICON_PATH.exists():
-        st.image(str(LOGO_ICON_PATH), width=72)
-with col_title:
+if LOGO_HORIZONTAL_PATH.exists():
+    st.image(str(LOGO_HORIZONTAL_PATH), width=420)
+else:
     st.markdown("# SmartCart Retail Growth Dashboard")
 st.markdown(
     "See which customers to protect, win back, or encourage to buy again. "
