@@ -139,6 +139,53 @@ def plot_retention_heatmap(retention: pd.DataFrame) -> None:
     print("Figure saved: cohort_retention_heatmap.png")
 
 
+def plot_retention_by_calendar_month(retention: pd.DataFrame) -> None:
+    """Average retention rate by actual calendar month (not months-since-acquisition).
+
+    The heatmap's columns are cohort age, so a seasonal effect tied to the real
+    calendar cuts diagonally across it and is not visible at a glance. This
+    chart re-aggregates the same `cohort_retention` data by target calendar
+    month to make that pattern directly readable.
+    """
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    r = retention[retention["period"] > 0].copy()
+    cohort_month = pd.to_datetime(r["cohort_month"])
+    target = cohort_month.values.astype("datetime64[M]") + r["period"].values.astype("timedelta64[M]")
+    r["target_month_num"] = pd.to_datetime(target).month
+
+    monthly = (
+        r.groupby("target_month_num")["retention_rate"]
+        .mean()
+        .reindex(range(1, 13))
+    )
+    month_labels = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ]
+
+    colors = [BLUE] * 12
+    colors[10] = ACCENT  # November: peak
+    colors[11] = "#8C1D1D"  # December: trough
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    bars = ax.bar(month_labels, monthly.values, color=colors)
+    for bar, val in zip(bars, monthly.values):
+        if not np.isnan(val):
+            ax.text(bar.get_x() + bar.get_width() / 2, val + 0.005, f"{val:.0%}",
+                    ha="center", va="bottom", fontsize=9)
+
+    ax.set_xlabel("Calendar month (target month of the return purchase)", fontsize=10)
+    ax.set_ylabel("Average retention rate", fontsize=10)
+    ax.set_title("Retention by Calendar Month: November Peak, December Trough",
+                 fontsize=12, fontweight="bold")
+    ax.set_ylim(0, monthly.max() * 1.2)
+    fig.tight_layout()
+    fig.savefig(OUT_DIR / "cohort_retention_by_calendar_month.png", dpi=150)
+    plt.close(fig)
+    print("Figure saved: cohort_retention_by_calendar_month.png")
+
+
 def write_outputs(retention: pd.DataFrame, revenue: pd.DataFrame, db_path: Path) -> None:
     with sqlite3.connect(db_path) as con:
         retention.to_sql("cohort_retention", con, if_exists="replace", index=False)
@@ -169,6 +216,7 @@ def main(db_path: Path = DB_PATH) -> None:
 
     write_outputs(retention, revenue, db_path)
     plot_retention_heatmap(retention)
+    plot_retention_by_calendar_month(retention)
 
     print("\nDone.")
 
