@@ -109,6 +109,58 @@ st.plotly_chart(fig_heat, use_container_width=True)
 
 st.divider()
 
+#  retention by calendar month
+st.subheader("Retention by Calendar Month")
+st.markdown(
+    "The heatmap above groups retention by *months since first purchase*, so a "
+    "seasonal effect tied to the actual calendar falls on a different diagonal "
+    "for every cohort and is easy to miss. This chart re-aggregates the same "
+    "underlying data by the actual calendar month of the return purchase."
+)
+
+cal = retention[retention["period"] > 0].copy()
+cohort_dt = pd.to_datetime(cal["cohort_month"])
+target = cohort_dt.values.astype("datetime64[M]") + cal["period"].values.astype("timedelta64[M]")
+cal["target_month_num"] = pd.to_datetime(target).month
+
+monthly = (
+    cal.groupby("target_month_num")["retention_rate"]
+    .mean()
+    .reindex(range(1, 13))
+)
+month_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+bar_colors = [BLUE] * 12
+bar_colors[10] = ACCENT     # November: peak
+bar_colors[11] = "#999999"  # December: trough
+
+fig_cal = go.Figure(
+    go.Bar(
+        x=month_labels,
+        y=monthly.values,
+        marker_color=bar_colors,
+        text=[f"{v:.0%}" if pd.notna(v) else "" for v in monthly.values],
+        textposition="outside",
+        hovertemplate="%{x}: %{y:.1%}<extra></extra>",
+    )
+)
+fig_cal.update_layout(
+    **PLOTLY_LAYOUT,
+    xaxis_title="Calendar month of the return purchase",
+    yaxis_title="Average retention rate",
+    yaxis_tickformat=".0%",
+)
+st.plotly_chart(fig_cal, use_container_width=True)
+
+nov_val = monthly.iloc[10]
+dec_val = monthly.iloc[11]
+st.caption(
+    f"Retention peaks at {nov_val:.0%} in November and drops to {dec_val:.0%} in December, "
+    "consistent with wholesale buyers restocking ahead of the holiday season rather than during it."
+)
+
+st.divider()
+
 #  retention curves
 st.subheader("Retention Trend by Customer Group")
 st.markdown(
