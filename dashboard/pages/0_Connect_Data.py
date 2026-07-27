@@ -16,7 +16,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from utils import LOGO_ICON, BLUE, ACCENT, CONFIG, CONFIG_PATH, ROOT, DB_PATH, render_sidebar
 
-st.set_page_config(page_title="Connect Data - SmartCart", page_icon=LOGO_ICON, layout="wide")
+st.set_page_config(page_title="Connect Data - SmartCart", page_icon=LOGO_FAVICON, layout="wide")
 
 st.markdown(
     f"""

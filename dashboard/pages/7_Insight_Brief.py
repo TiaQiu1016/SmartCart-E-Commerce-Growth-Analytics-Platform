@@ -32,7 +32,7 @@ _REVIEW_CHECKLIST = [
     "No customer-level identifiers are exposed",
 ]
 
-st.set_page_config(page_title="Insight Brief - SmartCart", page_icon=LOGO_ICON, layout="wide")
+st.set_page_config(page_title="Insight Brief - SmartCart", page_icon=LOGO_FAVICON, layout="wide")
 
 st.markdown(
     f"""

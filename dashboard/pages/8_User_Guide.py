@@ -14,7 +14,7 @@ from utils import LOGO_ICON, ACCENT, BLUE, COMPANY_NAME, render_sidebar
 ROOT = Path(__file__).resolve().parents[2]
 FULL_GUIDE_PATH = ROOT / "reports" / "dashboard_user_guide.md"
 
-st.set_page_config(page_title="User Guide - SmartCart", page_icon=LOGO_ICON, layout="wide")
+st.set_page_config(page_title="User Guide - SmartCart", page_icon=LOGO_FAVICON, layout="wide")
 
 st.markdown(
     f"""

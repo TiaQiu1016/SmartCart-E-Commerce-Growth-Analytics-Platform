@@ -21,6 +21,12 @@ LOGO_ICON_PATH = ROOT / "docs" / "branding" / "smartcart_icon_transparent.png"
 LOGO_ICON = Image.open(LOGO_ICON_PATH) if LOGO_ICON_PATH.exists() else "🛒"
 LOGO_HORIZONTAL_PATH = ROOT / "docs" / "branding" / "smartcart_logo_horizontal.png"
 
+# Bold, simplified variant for browser favicons (16-32px) — the detailed
+# LOGO_ICON above goes muddy at that size, so this uses thicker strokes and
+# fewer details instead of relying on the browser to downscale cleanly.
+LOGO_FAVICON_PATH = ROOT / "docs" / "branding" / "smartcart_favicon.png"
+LOGO_FAVICON = Image.open(LOGO_FAVICON_PATH) if LOGO_FAVICON_PATH.exists() else LOGO_ICON
+
 
 def _read_config() -> dict:
     if CONFIG_PATH.exists():

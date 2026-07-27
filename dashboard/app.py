@@ -16,6 +16,7 @@ from utils import (
     ACCENT,
     BLUE,
     CURRENCY,
+    LOGO_FAVICON,
     LOGO_HORIZONTAL_PATH,
     LOGO_ICON,
     PLOTLY_LAYOUT,
@@ -29,7 +30,7 @@ from utils import (
 
 st.set_page_config(
     page_title="SmartCart Analytics",
-    page_icon=LOGO_ICON,
+    page_icon=LOGO_FAVICON,
     layout="wide",
     initial_sidebar_state="expanded",
 )

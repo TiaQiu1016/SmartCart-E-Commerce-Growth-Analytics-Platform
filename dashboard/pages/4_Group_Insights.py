@@ -26,7 +26,7 @@ from utils import (
     render_sidebar,
 )
 
-st.set_page_config(page_title="Group Insights — SmartCart", page_icon=LOGO_ICON, layout="wide")
+st.set_page_config(page_title="Group Insights — SmartCart", page_icon=LOGO_FAVICON, layout="wide")
 
 st.markdown(
     f"""
