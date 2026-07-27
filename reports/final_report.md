@@ -173,17 +173,3 @@ SmartCart turns a transaction CSV into a working growth analytics product. A ret
 The project is stronger than a static model dump because it connects model outputs to specific actions. The segmentation and CLV modules identify customer value; churn and propensity rank near-term outreach; market basket suggests merchandising actions; cohort retention shows lifecycle patterns; group comparisons and V2 churn validation provide evidence checks; and the AI brief translates the evidence into plain language with guardrails.
 
 The final result is a reusable, transparent, and auditable demo of how small retailers could access growth analytics without enterprise software.
-
-## Recommended Next Steps
-
-1. Record the final presentation using the live dashboard flow: Overview, Customer Groups, Churn Risk, Purchase Likelihood, Product Recommendations, Group Insights, and AI Insight Brief.
-2. Run one final deployment smoke test after the last push and confirm all dashboard pages load for an external viewer.
-3. For production use, rerun all modules on the retailer's own data, validate churn and propensity on a rolling cutoff, and review product recommendations with merchandising context.
-4. Extend the AI brief into a managed admin workflow where approved briefs are versioned by dataset refresh date.
-
-## Further Questions
-
-- How stable are churn and propensity metrics under multiple rolling cutoff dates rather than one fixed cutoff?
-- How would recommendations change for a B2C retailer with fewer repeat wholesale orders?
-- Which dashboard actions should be exported into marketing tools such as email platforms or CRM systems?
-- What level of AI automation would be acceptable for a small retailer after repeated human-reviewed brief cycles?
