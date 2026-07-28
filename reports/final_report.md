@@ -147,11 +147,23 @@ Live AI generation is disabled by default in the public demo so viewers cannot s
 
 ## Dashboard and Deployment
 
-The dashboard is the product layer. It includes Overview, Data Setup, Customer Groups, Purchase Likelihood, Product Recommendations, Group Insights, Customer Retention Over Time, Churn Risk, AI Insight Brief, and User Guide pages. The latest dashboard polish reduces technical and course-project wording so the demo feels more like a retailer-facing tool than a classroom artifact.
+The dashboard is the product layer. It includes Overview, Connect Data, Customer Groups, Purchase Forecast, Product Pairings, Group Insights, Retention, Churn Risk, Insight Brief, and User Guide pages. The latest dashboard polish reduces technical and course-project wording so the demo feels more like a retailer-facing tool than a classroom artifact.
 
 The app uses `smartcart_deploy.db` for deployment, a smaller SQLite database that excludes the full transaction table but preserves dashboard-ready outputs. Streamlit Community Cloud is connected to GitHub, so pushes to `main` redeploy automatically. The User Guide page gives non-technical users page-by-page guidance without requiring them to read the repository.
 
 The main deployment limitation is operational staleness: Streamlit's free tier can briefly serve an older container after a push. The team mitigates this with manual smoke tests across all dashboard pages after deployment.
+
+## Remaining Limitations and Boundaries
+
+SmartCart is a decision-support system, not a causal engine, universal model, or autonomous marketing advisor. The project reduces several major technical risks through leakage-free splits, data contracts, validation reports, and human review, but several interpretation boundaries remain.
+
+First, the group comparisons and cohort patterns are observational. They identify associations and meaningful differences between customer groups, regions, and lifecycle periods, but they do not prove that geography, segment membership, or another factor caused the observed outcome. Controlled experiments would be required before making causal claims about campaign effects.
+
+Second, the Online Retail II dataset is an older, wholesale-oriented transaction dataset covering 2009 to 2011. Customer behavior, purchase frequency, seasonality, and model performance may differ for modern B2C retailers or other industries. For production use, the pipeline should be rerun and revalidated on each retailer's own data before decisions are made from the scores.
+
+Third, the churn, propensity, and CLV outputs should be interpreted as prioritization signals rather than certain outcomes. The churn and propensity models use transaction history only; they do not include browsing behavior, marketing exposure, customer-service interactions, inventory changes, or external market factors. BG/NBD CLV is also less reliable for one-time buyers or customers with limited repeat-purchase history.
+
+Finally, the AI brief converts verified analytics outputs into plain-language recommendations, but it still requires human judgment. Automated number tracing and causal-language checks reduce the risk of fabricated or overclaimed insights, but they do not eliminate the need for a named reviewer to confirm that the wording is appropriate for the retailer's business context.
 
 ## Risk Register
 
