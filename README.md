@@ -13,6 +13,8 @@ analytics tools.
 
 **Live demo:** [smartcart-e-commerce-growth-analytics-platform-83ccy9znfbdzc39.streamlit.app](https://smartcart-e-commerce-growth-analytics-platform-83ccy9znfbdzc39.streamlit.app/)
 
+**Final presentation slides:** [Canva deck](https://www.canva.com/design/DAHQeJee6j0/Ou0WIr91brnwgU3dWpj2Cw/edit?ui=eyJFIjp7Im0iOnRydWUsIkE_IjoibiJ9LCJLIjp7IkEiOiJlMWUyYWJiNy0zMGU1LTRjMDctYTkxOC05MDc2NjZiMDFlNDUifX0)
+
 ## Modules
 
 | Module | Method | Dataset |
